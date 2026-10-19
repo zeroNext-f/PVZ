@@ -1,0 +1,9 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/bullet/bullet_001_pea.tscn" id="1_pea"]
+[ext_resource type="Script" path="res://scripts/bullet/bullet_018_armor_piercing_pea.gd" id="2_armor"]
+
+[node name="Bullet018ArmorPiercingPea" instance=ExtResource("1_pea")]
+script = ExtResource("2_armor")
+bullet_type = 18
+bullet_mode = 6

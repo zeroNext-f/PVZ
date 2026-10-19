@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/character/plant/plant_003_cherry_bomb.tscn" id="1_cherry"]
+[ext_resource type="Script" path="res://scripts/fx/plant_effect/plant_effect_wall_nut_replant_bomb.gd" id="2_effect"]
+
+[node name="WallNutReplantBomb" instance=ExtResource("1_cherry")]
+script = ExtResource("2_effect")
+
+[node name="BombComponent" parent="." index="10"]
+bomb_value = 720

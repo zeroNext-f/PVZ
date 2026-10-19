@@ -1,0 +1,75 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/card/battle_glove_in_ui.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/image/ui/ui_card/ShovelBank.png" id="2_bank"]
+[ext_resource type="Texture2D" path="res://assets/image/garden/Zen_GardenGlove.png" id="3_glove"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBox_empty"]
+
+[node name="UIBattleGlove" type="TextureRect"]
+visible = false
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = 78.0
+offset_right = 153.0
+offset_bottom = 75.0
+grow_horizontal = 0
+texture = ExtResource("2_bank")
+script = ExtResource("1_script")
+tooltip_text = "手套（W）：移动植物，成功移动后冷却15秒"
+
+[node name="Icon" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("3_glove")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("StyleBox_empty")
+theme_override_styles/pressed = SubResource("StyleBox_empty")
+theme_override_styles/hover = SubResource("StyleBox_empty")
+theme_override_styles/disabled = SubResource("StyleBox_empty")
+theme_override_styles/focus = SubResource("StyleBox_empty")
+
+[node name="CooldownLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 25
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="ShortcutLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 54.0
+offset_top = 50.0
+offset_right = 75.0
+offset_bottom = 75.0
+text = "W"
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2

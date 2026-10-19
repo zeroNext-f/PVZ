@@ -1,0 +1,55 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/choose_level/choose_level_button.tscn" id="1_button"]
+[ext_resource type="Texture2D" path="res://assets/image/Almanac/Almanac_GroundDay.jpg" id="2_day"]
+[ext_resource type="PackedScene" path="res://scenes/character/plant/plant_001_pea_shooter_single.tscn" id="3_pea"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_cover"]
+
+[node name="DayEmptyLevelButton" instance=ExtResource("1_button")]
+custom_minimum_size = Vector2(110, 108)
+is_placeholder = true
+
+[node name="TextureButton" parent="." index="0"]
+tooltip_text = "关卡内容待制作"
+
+[node name="Label" parent="TextureButton" index="0"]
+text = "1-1"
+
+[node name="Panel" type="Panel" parent="."]
+clip_children = 1
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -49.0
+offset_top = 2.131012
+offset_right = 46.0
+offset_bottom = 74.131
+grow_horizontal = 2
+pivot_offset = Vector2(41, 33.5)
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBox_cover")
+
+[node name="TextureRect" type="TextureRect" parent="Panel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -55.0
+offset_top = -39.0
+offset_right = 145.0
+offset_bottom = 161.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(0.6, 0.6)
+mouse_filter = 2
+texture = ExtResource("2_day")
+
+[node name="Plant001PeaShooterSingle" parent="Panel/TextureRect" node_paths=PackedStringArray("node_no_change_direction") instance=ExtResource("3_pea")]
+position = Vector2(89.166626, 88.11499)
+node_no_change_direction = [NodePath("HpComponent"), NodePath("SleepComponent"), null]
+character_init_type = 1
+
