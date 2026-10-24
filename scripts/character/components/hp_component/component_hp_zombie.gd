@@ -275,6 +275,18 @@ func Hp_loss(attack_value:int, bullet_mode :BulletRegistry.AttackMode =BulletReg
 		if sfx_be_attack_armor2 != SoundManager.TypeBeAttackSFX.Null and trigger_be_attack_SFX:
 			SoundManager.play_be_attack_SFX(sfx_be_attack_armor2)
 
+## 剧毒直接扣本体生命，绕过两类防具与寒冰易伤，保留原死亡、掉手掉头和刷新统计链路。[br]
+## [param attack_value] 本次应扣本体生命，非正数或已死亡目标不处理。
+func lose_poison_body_hp(attack_value:int) -> void:
+	if attack_value <= 0 or is_death or owner_character.is_death or owner_character.is_queued_for_deletion():
+		return
+	# 扣血前本体生命，用于向自然波次刷新统计报告实际损失量。
+	var previous_body_hp:int = curr_hp
+	curr_hp -= attack_value
+	signal_zombie_hp_loss.emit(previous_body_hp - curr_hp)
+	signal_hp_loss.emit(curr_hp, true)
+
+
 ## 小僵尸大麻烦更新僵尸血量
 func update_mini_zombie_hp():
 	max_hp /= 2

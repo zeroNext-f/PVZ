@@ -30,6 +30,8 @@ enum PlantCellType{
 
 ## 行和列 PlantCellManager赋值
 @export var row_col:Vector2i
+## 仅在本格同步恢复存档植物时为true，避免恢复留场冰川菇重复发动落地技能。
+var is_restoring_plant_from_save:bool = false
 
 @export_group("当前格子的条件")
 @export_subgroup("植物种植")
@@ -160,9 +162,14 @@ func imitater_create_plant(plant_type:CharacterRegistry.PlantType, is_plant_star
 ##[is_imitater_material:bool] 是否为模仿者材质
 ##[is_zombie_mode:bool] 是否为我是僵尸模式
 func create_plant(plant_type:CharacterRegistry.PlantType, is_imitater:=false, is_plant_start_effect:=true, is_imitater_material:=false, is_zombie_mode:=false) -> Plant000Base:
+	# 大喷菇不登记到场地植物层，包含模仿者创建阶段，避免替换原植物。
+	var is_temporary_fume: bool = plant_type == CharacterRegistry.PlantType.P011FumeShroom
 	var plant_condition:ResourcePlantCondition
 	var plant :Plant000Base
 	plant_condition = Global.character_registry.get_plant_info(plant_type, CharacterRegistry.PlantInfoAttribute.PlantConditionResource)
+	# 实际创建同步检查大喷菇的地形和禁种条件，避免预览之外的直接调用绕过限制。
+	if is_temporary_fume and not plant_condition.judge_is_can_plant(self, plant_type):
+		return null
 	# 花盆必须先种在空格；实际创建也检查，覆盖模仿者、预种植等直接调用入口。
 	if not plant_condition.judge_planting_order(self):
 		return null
@@ -178,7 +185,7 @@ func create_plant(plant_type:CharacterRegistry.PlantType, is_imitater:=false, is
 			#await get_tree().process_frame
 	else:
 		## 非紫卡默认拒绝占位；坚果的独立种植条件允许用新坚果替换存活坚果。
-		if is_instance_valid(plant_in_cell[plant_condition.place_plant_in_cell]):
+		if not is_temporary_fume and is_instance_valid(plant_in_cell[plant_condition.place_plant_in_cell]):
 			# 原植物在清除后仍会延迟释放，保留引用用于本次同步替换判断。
 			var existing_plant: Plant000Base = plant_in_cell[plant_condition.place_plant_in_cell]
 			if not plant_condition.can_replant_same_type or existing_plant.plant_type != plant_type \
@@ -206,13 +213,21 @@ func create_plant(plant_type:CharacterRegistry.PlantType, is_imitater:=false, is
 		Plant000Base.E_PInitAttr.IsZombieMode:is_zombie_mode
 	}
 	plant.init_plant(plant_init_para)
-	if is_imitater:
+	if is_temporary_fume:
+		# 挂在格子本身，底座死亡或移动不会连带移除它；位置仍与普通种植预览一致。
+		plant.position = get_global_transform().affine_inverse() * plant_container_node[plant_condition.place_plant_in_cell].global_position
+		add_child(plant)
+		temporary_fume_plants.append(plant)
+	elif is_imitater:
 		plant_container_node[CharacterRegistry.PlacePlantInCell.Imitater].add_child(plant)
 	else:
 		plant_container_node[plant_condition.place_plant_in_cell].add_child(plant)
 
-	plant_in_cell[plant_condition.place_plant_in_cell] = plant
-	plant.signal_character_death.connect(one_plant_free.bind(plant))
+	if is_temporary_fume:
+		plant.signal_character_death.connect(_temporary_fume_free.bind(plant))
+	else:
+		plant_in_cell[plant_condition.place_plant_in_cell] = plant
+		plant.signal_character_death.connect(one_plant_free.bind(plant))
 
 	if is_plant_start_effect:
 		## 种植特效
@@ -243,6 +258,15 @@ func create_plant(plant_type:CharacterRegistry.PlantType, is_imitater:=false, is
 		_create_wall_nut_replant_bomb()
 
 	return plant
+
+
+## 本格不占场地种植层的大喷菇，单独管理生命周期及存档。
+var temporary_fume_plants: Array[Plant000Base] = []
+
+## [param plant] 已死亡的临时大喷菇；不走普通占位释放，避免拆除原植物梯子等副作用。
+func _temporary_fume_free(plant: Plant000Base) -> void:
+	temporary_fume_plants.erase(plant)
+	signal_plant_free.emit(self, plant.plant_type)
 
 
 ## 在本格独立创建 720 伤害的灰烬爆炸，不占据或删除新坚果，不参与卡牌结算。
@@ -385,8 +409,15 @@ func be_bungi() -> Node2D:
 
 #region 特殊状态
 #region 墓碑相关
-## 创建墓碑
+## 返回本格原始地形是否允许生成墓碑；水面及屋顶即使有莲叶或花盆也不允许。
+func can_create_tombstone() -> bool:
+	return plant_cell_type != PlantCellType.Pool and plant_cell_type != PlantCellType.Roof
+
+
+## 创建墓碑；禁止地形在清理植物之前返回，保留其底座和其他植物。
 func create_tombstone():
+	if not can_create_tombstone():
+		return
 	if is_instance_valid(tombstone):
 		print("当前植物格子", row_col, "已经有墓碑， 创建墓碑失败")
 		return
@@ -399,7 +430,9 @@ func create_tombstone():
 	## 删除对应位置植物
 	for place_plant_in_cell in all_place_plant_in_cell_be_tombstone:
 		## 如果存在植物
-		if is_instance_valid(plant_in_cell[place_plant_in_cell]):
+		if is_instance_valid(plant_in_cell[place_plant_in_cell]) \
+			and not plant_in_cell[place_plant_in_cell].is_death \
+			and not plant_in_cell[place_plant_in_cell].is_queued_for_deletion():
 			plant_in_cell[place_plant_in_cell].character_death()
 
 	tombstone = SceneRegistry.TOMBSTONE.instantiate()
@@ -549,6 +582,18 @@ func is_mouse_in_ui(control_node: Control) -> bool:
 	return control_node.get_rect().has_point(control_node.get_local_mouse_position())
 
 ## 返回当前被铲子威胁的植物
+## 仅供铲子使用，优先移除最后叠放的存活大喷菇；其他工具仍沿用原种植层选择。
+func get_shovel_target() -> Plant000Base:
+	# 从后向前挑选叠种实例，已死亡或等待删除的对象不能再次被铲。
+	for index: int in range(temporary_fume_plants.size() - 1, -1, -1):
+		# 当前候选临时植物。
+		var candidate: Plant000Base = temporary_fume_plants[index]
+		if is_instance_valid(candidate) and not candidate.is_death and not candidate.is_queued_for_deletion():
+			return candidate
+	return return_plant_be_shovel_look()
+
+
+## 返回普通种植层中当前被工具选中的植物。
 func return_plant_be_shovel_look():
 	## 如果当前格子有植物,根据位置选择植物，若位置没有植物，选择别的植物
 	if get_curr_plant_num() > 0:
@@ -682,6 +727,10 @@ func get_plant_cell_surrounding()->Array[PlantCell]:
 func get_save_game_data_plant_cell() -> ResourceSaveGamePlantCell:
 	var save_game_data_plant_cell:ResourceSaveGamePlantCell = ResourceSaveGamePlantCell.new()
 	save_game_data_plant_cell.row_col = row_col
+	# 临时单位独立保存，避免覆盖本格普通植物数据。
+	for temporary_plant: Plant000Base in temporary_fume_plants:
+		if is_instance_valid(temporary_plant) and not temporary_plant.is_death and not temporary_plant.is_queued_for_deletion():
+			save_game_data_plant_cell.temporary_fume_data.append(temporary_plant.gat_save_game_data_plant())
 	for place_plant_in_cell in plant_in_cell:
 		if is_instance_valid(plant_in_cell[place_plant_in_cell]):
 			## 如果不是加农炮
@@ -703,11 +752,18 @@ func load_game_data_plant_cell(save_game_data_plant_cell:ResourceSaveGamePlantCe
 		var game_data_plant:Dictionary = save_game_data_plant_cell.plant_type_in_cell[place_plant_in_cell]
 		_load_game_data_create_plant(game_data_plant)
 
+	# 旧存档此数组默认空；新存档恢复时仍不写入任何种植层。
+	for temporary_data: Dictionary in save_game_data_plant_cell.temporary_fume_data:
+		_load_game_data_create_plant(temporary_data)
 	if save_game_data_plant_cell.is_ladder:
 		be_ladder()
 
 ## 清除当前植物格子数据
 func clear_data_plant_cell():
+	# 死亡回调会修改原列表，清场遍历快照。
+	for temporary_plant: Plant000Base in temporary_fume_plants.duplicate():
+		if is_instance_valid(temporary_plant):
+			temporary_plant.character_death_disappear()
 	for place_plant_in_cell in plant_in_cell:
 		if is_instance_valid(plant_in_cell[place_plant_in_cell]):
 			plant_in_cell[place_plant_in_cell].character_death_disappear()
@@ -716,7 +772,9 @@ func clear_data_plant_cell():
 ## 读档时创建植物
 func _load_game_data_create_plant(game_data_plant):
 	var plant:Plant000Base
+	is_restoring_plant_from_save = true
 	plant = create_plant(game_data_plant["plant_type"], false, false, game_data_plant["is_imitater_material"])
+	is_restoring_plant_from_save = false
 	if plant != null:
 		plant.load_game_data_plant(game_data_plant)
 #endregion

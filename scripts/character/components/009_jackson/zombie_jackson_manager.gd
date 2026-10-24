@@ -92,6 +92,10 @@ func _on_animation_player_animation_finished(anim_name:StringName):
 	if time_anim < 4:
 		## 首次抬手动作判断是否召唤僵尸
 		if time_anim == 0:
+			# 伴舞独立检查自己的普通僵尸四向槽位；舞王死亡后仍继续运行此检查。
+			for dancer_reference:Variant in zombie_dancers.values():
+				if is_instance_valid(dancer_reference) and dancer_reference is Zombie010Dancer:
+					dancer_reference.check_normal_summon_slots()
 			#如果需要召唤伴舞僵尸,并且舞王还存在
 			if judge_need_call_dance() and zombie_dancers[-1]:
 				time_need_call_zombie += 1

@@ -25,6 +25,8 @@ enum E_ChangeColors{
 	LightAndDark,	## 明暗交替颜色变化(紫卡种植\咖啡豆)
 	CharredBlack,	## 被炸弹炸黑
 	GloveColor,	## 手套携带时仅将来源身体变暗，不覆盖生产、冰冻或受击颜色。
+	PoisonColor,	## 剧毒的独立绿色染色，与寒冰、魅惑等颜色因素合成。
+	HypnoCaptureHover,	## 魅惑菇指向可收编僵尸时的独立高亮，不覆盖受击与异常颜色。
 }
 
 

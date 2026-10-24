@@ -1641,6 +1641,7 @@ parameters/TimeScale/scale = 2.0
 visible = false
 script = ExtResource("46_knmu7")
 bomb_lane = 1
+bomb_value = 1800
 can_attack_plant_status = 7
 can_attack_zombie_status = 63
 bomb_sfx = &"explosion"
@@ -1648,7 +1649,7 @@ bomb_sfx = &"explosion"
 [node name="Area2DBomb" type="Area2D" parent="BombComponentJackbox" index="0"]
 position = Vector2(0, -45)
 collision_layer = 0
-collision_mask = 2050
+collision_mask = 2082
 input_pickable = false
 monitorable = false
 

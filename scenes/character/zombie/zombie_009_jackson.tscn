@@ -1102,6 +1102,7 @@ _data = {
 script = ExtResource("2_fumvv")
 num_moon_walk = 2
 zombie_type = 9
+zombie_body_size = 1
 sfx_enter_name = &"Dancer"
 metadata/_edit_pinned_properties_ = [&"zombie_type"]
 
@@ -1316,7 +1317,7 @@ script = ExtResource("45_gmpqk")
 body_change = Array[ExtResource("3_pi4sv")]([SubResource("Resource_gmpqk"), SubResource("Resource_lh6oh")])
 
 [node name="HpComponent" parent="." index="4"]
-max_hp = 500
+max_hp = 720
 
 [node name="Anim_blink" type="Sprite2D" parent="CharredComponent/ZombieCharred/CharredCorrect" index="0"]
 centered = false

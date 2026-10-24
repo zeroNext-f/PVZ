@@ -47,7 +47,7 @@ enum E_LadderState{
 var curr_speed :float = 20
 var curr_speed_product :float
 var curr_speed_move :float = 1
-## 动画地面位移的独立移动倍率，默认 1；旗帜入场专属加速不改变啃食或动画速度。
+## 动画地面位移的独立倍率，默认 1；旗帜已通过动画速度同步加速，不再额外修改此倍率。
 var ground_move_multiplier:float = 1.0
 
 ## 根据ground移动
@@ -76,6 +76,8 @@ enum E_MoveFactor{
 	IsAnimGap,				## 动画过度间隙
 	IsBlover,				## 被三叶草吹走
 	IsDeath,				## 停止移动的死亡时
+	FootballImpact,		## 橄榄球前扑、定格与收势时停步。
+	FootballLaunch,		## 顶飞期间由独立轨迹移动，不叠加自主位移。
 }
 
 signal signal_move_body_y(move_y_value:float)

@@ -1,7 +1,8 @@
 extends Character000Base
 class_name Plant000Base
 
-@onready var sleep_component: SleepComponent = %SleepComponent
+## 部分植物已移除睡眠组件；没有节点时为null，不连接睡眠信号或执行唤醒。
+@onready var sleep_component: SleepComponent = get_node_or_null("SleepComponent") as SleepComponent
 @onready var blink_component: BlinkComponent = %BlinkComponent
 ## 花园组件
 @onready var garden_component: GardenComponent = %GardenComponent
@@ -110,13 +111,13 @@ func ready_norm_signal_connect():
 		)
 
 	## 植物睡眠组件
-	sleep_component.signal_is_sleep.connect(update_is_sleeping.bind(true))
-	sleep_component.signal_not_is_sleep.connect(update_is_sleeping.bind(false))
-
-	## 植物睡眠影响的组件
-	for sleep_influence_component in sleep_component.sleep_influence_components:
-		sleep_component.signal_is_sleep.connect(sleep_influence_component.disable_component.bind(ComponentNormBase.E_IsEnableFactor.Sleep))
-		sleep_component.signal_not_is_sleep.connect(sleep_influence_component.enable_component.bind(ComponentNormBase.E_IsEnableFactor.Sleep))
+	if is_instance_valid(sleep_component):
+		sleep_component.signal_is_sleep.connect(update_is_sleeping.bind(true))
+		sleep_component.signal_not_is_sleep.connect(update_is_sleeping.bind(false))
+		## 植物睡眠影响的组件
+		for sleep_influence_component in sleep_component.sleep_influence_components:
+			sleep_component.signal_is_sleep.connect(sleep_influence_component.disable_component.bind(ComponentNormBase.E_IsEnableFactor.Sleep))
+			sleep_component.signal_not_is_sleep.connect(sleep_influence_component.enable_component.bind(ComponentNormBase.E_IsEnableFactor.Sleep))
 
 ## 初始化正常出战角色
 func ready_norm():
@@ -125,7 +126,7 @@ func ready_norm():
 	garden_component.queue_free()
 	curr_be_attack_status = init_be_attack_status
 	## 如果白天睡觉
-	if is_sleep_in_day:
+	if is_sleep_in_day and is_instance_valid(sleep_component):
 		sleep_component.judge_is_sleeping()
 
 	GlobalUtils.update_plant_cell_slope_y_array(plant_cell, node2d_detect_in_slope)
@@ -141,10 +142,11 @@ func ready_show():
 func ready_garden():
 	super()
 	garden_component.init_garden_component(garden_date_init)
-	sleep_component.signal_is_sleep.connect(garden_component.disable_component.bind(ComponentNormBase.E_IsEnableFactor.Sleep))
-	sleep_component.signal_not_is_sleep.connect(garden_component.enable_component.bind(ComponentNormBase.E_IsEnableFactor.Sleep))
+	if is_instance_valid(sleep_component):
+		sleep_component.signal_is_sleep.connect(garden_component.disable_component.bind(ComponentNormBase.E_IsEnableFactor.Sleep))
+		sleep_component.signal_not_is_sleep.connect(garden_component.enable_component.bind(ComponentNormBase.E_IsEnableFactor.Sleep))
 	## 如果白天睡觉
-	if is_sleep_in_day:
+	if is_sleep_in_day and is_instance_valid(sleep_component):
 		sleep_component.judge_is_sleeping()
 	shadow.visible = false
 
@@ -244,6 +246,8 @@ func preplant_purple_body_light_and_dark_end():
 #endregion
 ## 睡眠植物被咖啡豆唤醒
 func coffee_bean_awake_up():
+	if not is_instance_valid(sleep_component):
+		return
 	var tween:Tween = create_tween()
 	tween.tween_property(body, ^"scale:y", 0.8, 0.5)
 	tween.tween_property(body, ^"scale:y", 1.2, 0.5)
@@ -253,7 +257,7 @@ func coffee_bean_awake_up():
 
 ## 植物修改睡眠
 func update_is_sleeping(new_is_sleeping:bool):
-	self.is_sleeping = new_is_sleeping
+	self.is_sleeping = new_is_sleeping and is_instance_valid(sleep_component)
 
 
 #region 花园植物
@@ -278,7 +282,9 @@ func gat_save_game_data_plant()->Dictionary:
 ## 读档植物数据
 func load_game_data_plant(save_game_data_plant:Dictionary):
 	## 原本是睡觉，存档不睡觉
-	if is_sleeping and not save_game_data_plant.get("is_sleeping", true):
+	if not is_instance_valid(sleep_component):
+		is_sleeping = false
+	elif is_sleeping and not save_game_data_plant.get("is_sleeping", true):
 		is_sleeping = false
 		sleep_component.end_sleep()
 

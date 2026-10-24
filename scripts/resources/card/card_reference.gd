@@ -25,6 +25,8 @@ enum CardType {
 @export var content_id: int = 0
 ## 植物模仿修饰；编号仍指向被模仿植物，不另注册模板。
 @export var is_imitater: bool = false
+## 仅用于保存选卡组合：墓碑吞噬者是否与列表中的下一张卡共用槽位，不参与身份键。
+var shares_slot_with_next: bool = false
 
 
 ## 创建一份独立引用；[param type] 为卡牌类别，[param id] 为角色编号。
@@ -41,7 +43,10 @@ static func create(type: int, id: int, imitater: bool = false) -> ResourceCardRe
 
 ## 返回独立身份副本；显式构造确保类别先于角色编号赋值，不依赖 Resource 属性复制顺序。
 func copy_reference() -> ResourceCardReference:
-	return create(card_type, content_id, is_imitater)
+	# 独立身份副本同时保留选卡组合标记，不复制卡片费用、冷却或当前上下层。
+	var card_ref := create(card_type, content_id, is_imitater)
+	card_ref.shares_slot_with_next = shares_slot_with_next
+	return card_ref
 
 
 ## 返回是否为已定义的非空角色，模仿修饰不能用于其他类别或模仿者选择入口。
@@ -72,7 +77,11 @@ func get_selection_key() -> Vector3i:
 
 ## 返回可直接写入 JSON 的选卡数据，不将 Resource 对象交给 JSON 编码器。
 func to_dict() -> Dictionary:
-	return {"card_type": card_type, "content_id": content_id, "is_imitater": is_imitater}
+	# 普通引用仍写原三字段，只有共用槽位根增加关系标记，兼容既有存档。
+	var data: Dictionary = {"card_type": card_type, "content_id": content_id, "is_imitater": is_imitater}
+	if shares_slot_with_next:
+		data["shares_slot_with_next"] = true
+	return data
 
 
 ## 从当前格式还原引用；[param data] 必须包含三个字段，旧格式或非法值返回 null。
@@ -89,6 +98,11 @@ static func from_dict(data: Dictionary) -> ResourceCardReference:
 		return null
 	# 已通过字段类型检查的新引用。
 	var card_ref := create(int(data["card_type"]), int(data["content_id"]), data["is_imitater"])
+	if data.has("shares_slot_with_next"):
+		if typeof(data["shares_slot_with_next"]) != TYPE_BOOL:
+			return null
+		card_ref.shares_slot_with_next = data["shares_slot_with_next"] \
+			and card_ref.card_type == CardType.Plant and card_ref.content_id == CharacterRegistry.PlantType.P012GraveBuster
 	return card_ref if card_ref.is_valid() else null
 
 

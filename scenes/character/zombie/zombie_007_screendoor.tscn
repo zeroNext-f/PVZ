@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://df725841r4fqq"]
+[gd_scene load_steps=17 format=3 uid="uid://df725841r4fqq"]
 
 [ext_resource type="PackedScene" uid="uid://b72u5kwdpw4te" path="res://scenes/character/zombie/zombie_001_norm.tscn" id="1_qj1pj"]
 [ext_resource type="Script" uid="uid://caqagbuu2in1i" path="res://scripts/character/components/iron_node/iron_node_armor.gd" id="2_rjx66"]
@@ -8,6 +8,8 @@
 [ext_resource type="Script" uid="uid://cj4hccewpwgyv" path="res://scripts/character/components/drop_body/ZombieArm1Drop.gd" id="5_rjx66"]
 [ext_resource type="Texture2D" uid="uid://ddlkkrp74v64f" path="res://assets/reanim/Zombie_outerarm_upper2.png" id="5_w3rtv"]
 [ext_resource type="Texture2D" uid="uid://d4avxxg7q7cl2" path="res://assets/reanim/Zombie_screendoor2.png" id="6_g6fjw"]
+
+[ext_resource type="Script" path="res://scripts/character/zombie/zombie_007_screendoor.gd" id="screen_entry"]
 
 [sub_resource type="Resource" id="Resource_g6fjw"]
 script = ExtResource("2_w3rtv")
@@ -51,7 +53,9 @@ radius = 20.0
 height = 100.0
 
 [node name="Zombie007Screendoor" node_paths=PackedStringArray("iron_node") instance=ExtResource("1_qj1pj")]
+script = ExtResource("screen_entry")
 zombie_type = 7
+zombie_body_size = 0
 iron_type = 2
 iron_node = NodePath("Body/BodyCorrect/IronNode")
 

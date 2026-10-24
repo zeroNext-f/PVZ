@@ -1,0 +1,165 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/choose_level/night_level_button.tscn" id="1_day_button"]
+[ext_resource type="Resource" path="res://resources/level_date_resource/mode_adventure/adventure_night_01.tres" id="2_day_01"]
+[ext_resource type="Resource" path="res://resources/level_date_resource/mode_adventure/adventure_night_02.tres" id="3_day_02"]
+[ext_resource type="Resource" path="res://resources/level_date_resource/mode_adventure/adventure_night_03.tres" id="4_day_03"]
+[ext_resource type="Resource" path="res://resources/level_date_resource/mode_adventure/adventure_night_04.tres" id="5_day_04"]
+[ext_resource type="Resource" path="res://resources/level_date_resource/mode_adventure/adventure_night_05.tres" id="6_day_05"]
+[ext_resource type="Resource" path="res://resources/level_date_resource/mode_adventure/adventure_night_06.tres" id="7_day_06"]
+[ext_resource type="Resource" path="res://resources/level_date_resource/mode_adventure/adventure_night_07.tres" id="8_day_07"]
+[ext_resource type="Resource" path="res://resources/level_date_resource/mode_adventure/adventure_night_08.tres" id="9_day_08"]
+[ext_resource type="Resource" path="res://resources/level_date_resource/mode_adventure/adventure_night_09.tres" id="10_day_09"]
+
+[node name="NightSublevels" type="Control"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="GridContainer" type="GridContainer" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -245.0
+offset_top = 123.0
+offset_right = 245.0
+offset_bottom = 487.0
+grow_horizontal = 2
+theme_override_constants/h_separation = 80
+theme_override_constants/v_separation = 20
+columns = 3
+
+[node name="Level1" parent="GridContainer" instance=ExtResource("1_day_button")]
+layout_mode = 2
+is_placeholder = false
+curr_level_data_game_para = ExtResource("2_day_01")
+tooltip_text = "2-1"
+
+[node name="TextureButton" parent="GridContainer/Level1" index="0"]
+tooltip_text = "2-1"
+
+[node name="Level2" parent="GridContainer" instance=ExtResource("1_day_button")]
+layout_mode = 2
+is_placeholder = false
+curr_level_data_game_para = ExtResource("3_day_02")
+tooltip_text = "2-2"
+
+[node name="TextureButton" parent="GridContainer/Level2" index="0"]
+tooltip_text = "2-2"
+
+[node name="Label" parent="GridContainer/Level2/TextureButton" index="0"]
+text = "2-2"
+
+[node name="Level3" parent="GridContainer" instance=ExtResource("1_day_button")]
+layout_mode = 2
+is_placeholder = false
+curr_level_data_game_para = ExtResource("4_day_03")
+tooltip_text = "2-3"
+
+[node name="TextureButton" parent="GridContainer/Level3" index="0"]
+tooltip_text = "2-3"
+
+[node name="Label" parent="GridContainer/Level3/TextureButton" index="0"]
+text = "2-3"
+
+[node name="Level4" parent="GridContainer" instance=ExtResource("1_day_button")]
+layout_mode = 2
+is_placeholder = false
+curr_level_data_game_para = ExtResource("5_day_04")
+tooltip_text = "2-4"
+
+[node name="TextureButton" parent="GridContainer/Level4" index="0"]
+tooltip_text = "2-4"
+
+[node name="Label" parent="GridContainer/Level4/TextureButton" index="0"]
+text = "2-4"
+
+[node name="Level5" parent="GridContainer" instance=ExtResource("1_day_button")]
+layout_mode = 2
+is_placeholder = false
+curr_level_data_game_para = ExtResource("6_day_05")
+tooltip_text = "2-5"
+
+[node name="TextureButton" parent="GridContainer/Level5" index="0"]
+tooltip_text = "2-5"
+
+[node name="Label" parent="GridContainer/Level5/TextureButton" index="0"]
+text = "2-5"
+
+[node name="Level6" parent="GridContainer" instance=ExtResource("1_day_button")]
+layout_mode = 2
+is_placeholder = false
+curr_level_data_game_para = ExtResource("7_day_06")
+tooltip_text = "2-6"
+
+[node name="TextureButton" parent="GridContainer/Level6" index="0"]
+tooltip_text = "2-6"
+
+[node name="Label" parent="GridContainer/Level6/TextureButton" index="0"]
+text = "2-6"
+
+[node name="Level7" parent="GridContainer" instance=ExtResource("1_day_button")]
+layout_mode = 2
+is_placeholder = false
+curr_level_data_game_para = ExtResource("8_day_07")
+tooltip_text = "2-7"
+
+[node name="TextureButton" parent="GridContainer/Level7" index="0"]
+tooltip_text = "2-7"
+
+[node name="Label" parent="GridContainer/Level7/TextureButton" index="0"]
+text = "2-7"
+
+[node name="Level8" parent="GridContainer" instance=ExtResource("1_day_button")]
+layout_mode = 2
+is_placeholder = false
+curr_level_data_game_para = ExtResource("9_day_08")
+tooltip_text = "2-8"
+
+[node name="TextureButton" parent="GridContainer/Level8" index="0"]
+tooltip_text = "2-8"
+
+[node name="Label" parent="GridContainer/Level8/TextureButton" index="0"]
+text = "2-8"
+
+[node name="Level9" parent="GridContainer" instance=ExtResource("1_day_button")]
+layout_mode = 2
+is_placeholder = false
+curr_level_data_game_para = ExtResource("10_day_09")
+tooltip_text = "2-9"
+
+[node name="TextureButton" parent="GridContainer/Level9" index="0"]
+tooltip_text = "2-9"
+
+[node name="Label" parent="GridContainer/Level9/TextureButton" index="0"]
+text = "2-9"
+
+[node name="PlaceholderNote" type="Label" parent="."]
+visible = false
+layout_mode = 1
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -180.0
+offset_top = 501.0
+offset_right = 180.0
+offset_bottom = 529.0
+theme_override_colors/font_color = Color(1, 1, 0.75, 1)
+text = ""
+horizontal_alignment = 1
+mouse_filter = 2
+
+[editable path="GridContainer/Level1"]
+[editable path="GridContainer/Level2"]
+[editable path="GridContainer/Level3"]
+[editable path="GridContainer/Level4"]
+[editable path="GridContainer/Level5"]
+[editable path="GridContainer/Level6"]
+[editable path="GridContainer/Level7"]
+[editable path="GridContainer/Level8"]
+[editable path="GridContainer/Level9"]

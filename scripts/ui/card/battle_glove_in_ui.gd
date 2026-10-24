@@ -16,10 +16,13 @@ var cursor:Sprite2D
 var cooldown_timer:Timer
 ## 当前是否处于手持状态。
 var is_using:bool = false
+## 卡槽进入战斗布局后才允许显示，避免传送带滑入期间在原点提前出现。
+var toolbar_ready: bool = false
 
 
 ## 初始化工具点击信号、冷却计时器和独立前景鼠标图标。
 func _ready() -> void:
+	visible = false
 	button.pressed.connect(_on_button_pressed)
 	cooldown_timer = Timer.new()
 	cooldown_timer.one_shot = true
@@ -35,7 +38,7 @@ func _ready() -> void:
 func _process(_delta:float) -> void:
 	# 工具属于所有战斗模式，不依赖关卡是否开放铲子。
 	var in_battle:bool = is_instance_valid(Global.main_game) \
-		and Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME
+		and Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME and toolbar_ready
 	visible = in_battle
 	cooldown_timer.paused = not in_battle
 	button.disabled = not can_use()
@@ -49,9 +52,18 @@ func _process(_delta:float) -> void:
 
 ## 返回是否可以通过鼠标或 W 拿起工具，冷却期间不允许切换进入手套状态。
 func can_use() -> bool:
-	return is_instance_valid(cooldown_timer) and cooldown_timer.is_stopped() \
+	return toolbar_ready and is_instance_valid(cooldown_timer) and cooldown_timer.is_stopped() \
 		and is_instance_valid(Global.main_game) \
 		and Global.main_game.main_game_progress == MainGameManager.E_MainGameProgress.MAIN_GAME
+
+
+## [param ready_for_battle] 卡槽入场动画与重挂载已完成；关闭时立即隐藏，位置和冷却进度不变。
+func set_toolbar_ready(ready_for_battle: bool) -> void:
+	toolbar_ready = ready_for_battle
+	if not toolbar_ready:
+		hide()
+		if is_instance_valid(cursor):
+			cursor.hide()
 
 
 ## 按钮与快捷键共用同一入口，避免快捷键绕过冷却。

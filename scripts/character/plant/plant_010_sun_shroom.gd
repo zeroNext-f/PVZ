@@ -1,69 +1,54 @@
+## 阳光菇：正常落地即生成八个25阳光，合计200，然后死亡；无周期生产或成长。
 extends Plant000Base
 class_name Plant010SunShroom
 
-@onready var create_sun_component: CreateSunComponent = $CreateSunComponent
-@onready var grow_timer: SpeedTimer = $GrowTimer
+## 一次性生成的阳光数量，合计200。
+const LANDING_SUN_COUNT:int = 8
+## 每个阳光的价值。
+const LANDING_SUN_VALUE:int = 25
+## 阳光出生位置，沿用原角色的发光点。
+@onready var marker_2d_create_sun:Marker2D = $Body/BodyCorrect/Marker2DCreateSun
+## 本实例是否已支付落地阳光，防止重复回调或存档恢复重复领取。
+var _landing_sun_paid:bool = false
 
-## 成长所需时间
-@export var time_grow:float = 100
-## 小阳光价值
-@export var mini_sun_value := 15
-## 正常阳光价值
-@export var norm_sun_value := 25
-
-@export_group("动画状态")
-## 成长
-@export var is_grow:=false
-
+## 正常出战入树后延迟到本帧初始化结束执行，预览、图鉴和花园不生产或死亡。
 func ready_norm():
 	super()
-	# 成长与产阳光各自保留基础周期，共同响应角色速度信号。
-	update_grow_speed(GlobalUtils.get_dic_product(influence_speed_factors))
-	grow_timer.start_scaled(time_grow)
-	create_sun_component.change_sun_value(mini_sun_value)
+	_produce_landing_suns.call_deferred()
 
-	if is_zombie_mode:
-		create_sun_component.disable_component(ComponentNormBase.E_IsEnableFactor.GameMode)
+## 一次性落地效果；阳光与抛出补间挂在阳光实例上，不随植物死亡中断。
+func _produce_landing_suns() -> void:
+	if is_death or hp_component.is_death or is_queued_for_deletion() \
+		or not is_instance_valid(Global.main_game):
+		return
+	if not _landing_sun_paid:
+		_landing_sun_paid = true
+		SoundManager.play_character_SFX("Throw1")
+		# 八个独立阳光沿用已有抛出、收集与自动消失流程。
+		for index:int in range(LANDING_SUN_COUNT):
+			# 本次生成的 25 阳光，使用正式阳光场景和容器。
+			var sun:Sun = SceneRegistry.SUN.instantiate()
+			sun.init_sun(LANDING_SUN_VALUE, Global.main_game.suns.to_local(marker_2d_create_sun.global_position))
+			Global.main_game.suns.add_child(sun)
+			# 上抛再下落，复用原产光的 0.3+0.6 秒轨迹。
+			var vertical_tween:Tween = sun.create_tween()
+			vertical_tween.tween_property(sun, "position:y", -15.0, 0.3).as_relative().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			vertical_tween.tween_property(sun, "position:y", 45.0, 0.6).as_relative().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+			sun.spawn_sun_tween = sun.create_tween()
+			sun.spawn_sun_tween.set_parallel()
+			sun.spawn_sun_tween.tween_subtween(vertical_tween)
+			sun.spawn_sun_tween.tween_property(sun, "position:x", randf_range(-30.0, 30.0), 0.9).as_relative()
+			sun.spawn_sun_tween.finished.connect(sun.on_sun_tween_finished)
+	hp_component.Hp_loss_death()
 
-
-func ready_norm_signal_connect():
-	super()
-	## 角色速度改变
-	signal_update_speed.connect(update_grow_speed)
-	signal_update_speed.connect(create_sun_component.owner_update_speed)
-
-## 成长结束
-func _on_grow_timer_timeout() -> void:
-	self.is_grow = true
-	create_sun_component.change_sun_value(norm_sun_value)
-
-## 已停止或尚未开始成长时也保存倍率，进度与零速由计时器处理。
-func update_grow_speed(speed_factor:float):
-	grow_timer.set_speed_scale(speed_factor)
-
-
-## 被僵尸啃食一次特殊效果,魅惑\大蒜\我是僵尸生产阳光
-func _be_zombie_eat_once_special(_attack_zombie:Zombie000Base):
-	if is_zombie_mode:
-		create_sun_component._on_be_eat_once()
-
-## 植物死亡
-func character_death():
-	if is_zombie_mode:
-		create_sun_component._on_character_death()
-	super()
-
-## 获取植物存档数据
+## 保存一次性结算标记，避免初始化与过程存档恢复重叠时重复产出。
 func gat_save_game_data_plant()->Dictionary:
-	var save_game_data_plant:Dictionary = super()
-	save_game_data_plant["is_grow"] = is_grow
+	# 沿用本体血量、格子和睡眠等共用存档字段。
+	var saved_data:Dictionary = super()
+	saved_data["landing_sun_paid"] = _landing_sun_paid
+	return saved_data
 
-	return save_game_data_plant
-
-## 读档植物数据
-func load_game_data_plant(save_game_data_plant:Dictionary):
-	super(save_game_data_plant)
-	is_grow = save_game_data_plant.get("is_grow", false)
-	if is_grow:
-		grow_timer.stop()
-		create_sun_component.change_sun_value(norm_sun_value)
+## [param saved_data] 已存植物数据；旧存档没有结算标记时视为未产出。
+func load_game_data_plant(saved_data:Dictionary):
+	super(saved_data)
+	_landing_sun_paid = saved_data.get("landing_sun_paid", false)

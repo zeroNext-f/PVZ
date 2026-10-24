@@ -3,3 +3,15 @@
 /android/
 .vscode
 assets
+
+# 本地检查产物、临时文件和新压缩快照不上传；已有历史提交保持。
+*.tmp
+*.log
+*.zip
+*.7z
+*.rar
+__pycache__/
+.agents/
+/work/
+/outputs/
+/snapshots/

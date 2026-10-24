@@ -644,8 +644,8 @@ func _on_zombie_dead(zombie: Zombie000Base) -> void:
 		_try_finish_wave(zombie.global_position)
 
 
-## [param source] 存活到换装时刻后，为全场距离最近的一名存活普僵更换同类型防具。[br]
-## 使用世界坐标直线距离，不限行或阵营；原地改变编号，保留位置、控制状态、阵营及计数。
+## [param source] 等待结束后，为最近的普通或无一类防具的铁门传播同类帽子。[br]
+## 不限行与阵营；普通保持原转换规则，铁门只添加一类防具，不改变身份或继续传播。
 func equip_nearest_adventure_norm(source: Zombie001Norm) -> void:
 	if not is_game_running() \
 		or not is_instance_valid(source) or source.is_death or source.hp_component.is_death \
@@ -653,14 +653,19 @@ func equip_nearest_adventure_norm(source: Zombie001Norm) -> void:
 		return
 	if source.zombie_type not in [CharacterRegistry.ZombieType.Z003Cone, CharacterRegistry.ZombieType.Z005Bucket]:
 		return
-	# 最近的合法普僵及其距离平方；避免开平方，等距时沿用登记顺序。
+	# 最近的合法换装目标及距离平方，普通与铁门没有额外优先级。
 	var nearest: Zombie001Norm = null
 	var nearest_distance_squared: float = INF
-	# 同一战场的普通僵尸，包括已被魅惑但仍存活的普通僵尸。
-	for zombie: Zombie000Base in all_zombies_1d:
-		if not is_instance_valid(zombie) or not zombie is Zombie001Norm \
-			or zombie.zombie_type != CharacterRegistry.ZombieType.Z001Norm \
+	# 先检查引用，避免其他死亡回调遗留的失效对象在强制转换时出错。
+	for reference:Variant in all_zombies_1d:
+		if not is_instance_valid(reference) or not reference is Zombie001Norm:
+			continue
+		# 同一战场的普通或铁门，保留魅惑实例也可被传播的原规则。
+		var zombie:Zombie001Norm = reference as Zombie001Norm
+		if zombie.zombie_type not in [CharacterRegistry.ZombieType.Z001Norm, CharacterRegistry.ZombieType.Z007ScreenDoor] \
 			or zombie.is_death or zombie.hp_component.is_death or zombie.is_queued_for_deletion() \
+			or zombie.has_received_adventure_armor \
+			or (zombie.hp_component as HpComponentZombie).curr_hp_armor1 > 0 \
 			or not zombie.is_inside_tree() or not main_game.is_ancestor_of(zombie):
 			continue
 		# 以双方世界坐标计算本次候选的直线距离平方。
@@ -876,9 +881,18 @@ func wave_refresh(curr_is_end_wave:bool):
 		## 多轮游戏计时器启动
 		multi_round_end_wave_timer_start()
 
-### 删除移动超出视野的僵尸,每次刷新僵尸调用
+## 删除超出视野的僵尸；快照防止死亡回调修改正在遍历的登记表，先检查引用再转换类型。
 func set_zombie_death_over_view():
-	for z:Zombie000Base in all_zombies_1d:
+	# 保存本次检查对象，死亡处理可能同步从原数组移除当前或其他实例。
+	var zombie_references:Array = all_zombies_1d.duplicate()
+	# 使用 Variant 接收可能失效的引用，避免有效性检查前触发强制类型转换。
+	for reference:Variant in zombie_references:
+		if not is_instance_valid(reference):
+			continue
+		# 已确认有效的僵尸；排队删除对象不重复发送死亡或清理通知。
+		var z:Zombie000Base = reference as Zombie000Base
+		if z == null or z.is_queued_for_deletion() or z.is_death:
+			continue
 		# 检查是否在屏幕外
 		if z.global_position.x > zombie_range_pos_x.y or z.global_position.x < zombie_range_pos_x.x:
 			#all_zombies_be_hypno.erase(z)

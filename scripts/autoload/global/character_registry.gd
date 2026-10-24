@@ -213,7 +213,7 @@ const PlantInfo = {
 	PlantType.P007Chomper: {
 		PlantInfoAttribute.PlantName: "Chomper",
 		PlantInfoAttribute.CoolTime: 7.5,
-		PlantInfoAttribute.SunCost: 75,
+		PlantInfoAttribute.SunCost: 50,
 		PlantInfoAttribute.PlantConditionResource : preload("res://resources/character_resource/plant_condition/000_common_plant_land.tres"),
 		PlantInfoAttribute.PlantScenes : preload("res://scenes/character/plant/plant_007_chomper.tscn")
 		},
@@ -234,8 +234,8 @@ const PlantInfo = {
 		},
 	PlantType.P010SunShroom: {
 		PlantInfoAttribute.PlantName: "SunShroom",
-		PlantInfoAttribute.CoolTime: 7.5,
-		PlantInfoAttribute.SunCost: 25,
+		PlantInfoAttribute.CoolTime: 50.0,
+		PlantInfoAttribute.SunCost: 0,
 		PlantInfoAttribute.PlantConditionResource : preload("res://resources/character_resource/plant_condition/000_common_plant_land.tres"),
 		PlantInfoAttribute.PlantScenes : preload("res://scenes/character/plant/plant_010_sun_shroom.tscn")
 		},
@@ -249,21 +249,21 @@ const PlantInfo = {
 	PlantType.P012GraveBuster: {
 		PlantInfoAttribute.PlantName: "GraveBuster",
 		PlantInfoAttribute.CoolTime: 7.5,
-		PlantInfoAttribute.SunCost: 75,
+		PlantInfoAttribute.SunCost: 50,
 		PlantInfoAttribute.PlantConditionResource : preload("res://resources/character_resource/plant_condition/012_grave_buster.tres"),
 		PlantInfoAttribute.PlantScenes : preload("res://scenes/character/plant/plant_012_grave_buster.tscn")
 		},
 	PlantType.P013HypnoShroom: {
 		PlantInfoAttribute.PlantName: "HypnoShroom",
-		PlantInfoAttribute.CoolTime: 30.0,
-		PlantInfoAttribute.SunCost: 75,
+		PlantInfoAttribute.CoolTime: 50.0,
+		PlantInfoAttribute.SunCost: 100,
 		PlantInfoAttribute.PlantConditionResource : preload("res://resources/character_resource/plant_condition/000_common_plant_land.tres"),
 		PlantInfoAttribute.PlantScenes : preload("res://scenes/character/plant/plant_013_hypno_shroom.tscn")
 		},
 	PlantType.P014ScaredyShroom: {
 		PlantInfoAttribute.PlantName: "ScaredyShroom",
 		PlantInfoAttribute.CoolTime: 7.5,
-		PlantInfoAttribute.SunCost: 25,
+		PlantInfoAttribute.SunCost: 300,
 		PlantInfoAttribute.PlantConditionResource : preload("res://resources/character_resource/plant_condition/000_common_plant_land.tres"),
 		PlantInfoAttribute.PlantScenes : preload("res://scenes/character/plant/plant_014_scaredy_shroom.tscn")
 		},
@@ -277,7 +277,7 @@ const PlantInfo = {
 	PlantType.P016DoomShroom: {
 		PlantInfoAttribute.PlantName: "DoomShroom",
 		PlantInfoAttribute.CoolTime: 50.0,
-		PlantInfoAttribute.SunCost: 125,
+		PlantInfoAttribute.SunCost: 175,
 		PlantInfoAttribute.PlantConditionResource : preload("res://resources/character_resource/plant_condition/000_common_plant_land.tres"),
 		PlantInfoAttribute.PlantScenes : preload("res://scenes/character/plant/plant_016_doom_shroom.tscn")
 		},
@@ -779,7 +779,7 @@ const ZombieSpawnPower: Dictionary[ZombieType, int] = {
 
 	ZombieType.Z006Paper: 2,		# 读报战力
 	ZombieType.Z007ScreenDoor: 4,	# 铁门战力
-	ZombieType.Z008Football: 7,	# 橄榄球战力
+	ZombieType.Z008Football: 5,	# 橄榄球单只出怪量消耗
 	ZombieType.Z009Jackson: 5,		# 舞王战力
 	ZombieType.Z010Dancer: 1,		# 伴舞战力
 
@@ -810,9 +810,9 @@ const ZombieSpawnWeights: Dictionary[ZombieType, int] = {
 	ZombieType.Z005Bucket: 3000,		# 铁桶权重
 
 	ZombieType.Z006Paper: 1000,		# 读报权重
-	ZombieType.Z007ScreenDoor: 3500,	# 铁门权重
-	ZombieType.Z008Football: 2000,		# 橄榄球权重
-	ZombieType.Z009Jackson: 1000,		# 舞王权重
+	ZombieType.Z007ScreenDoor: 2000,	# 铁门权重
+	ZombieType.Z008Football: 1000,		# 橄榄球全局出怪权重
+	ZombieType.Z009Jackson: 500,		# 舞王全局出怪权重
 	ZombieType.Z010Dancer: 4000,		# 伴舞权重
 
 	ZombieType.Z012Snorkle: 2000,		# 潜水

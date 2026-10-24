@@ -18,7 +18,18 @@ var sun_value:
 		curr_sun_value.text = str(value)
 
 		for card in curr_cards:
-			card.judge_sun_enough(value)
+			# 隐藏的下层卡也同步阳光资格，但是否可用仍由其上层标记决定。
+			for layer_card: Card in card.get_slot_cards():
+				layer_card.judge_sun_enough(value)
+
+## 返回所有实际卡牌，包含共用槽位下层；容量与快捷键仍只使用curr_cards中的槽位根。
+func get_all_cards() -> Array[Card]:
+	# 按物理槽位和上下层顺序展开的独立数组。
+	var cards: Array[Card] = []
+	# 每个物理槽位的根卡，下层由根卡统一展开。
+	for slot_card: Card in curr_cards:
+		cards.append_array(slot_card.get_slot_cards())
+	return cards
 
 func _ready() -> void:
 	Global.config_service.signal_change_disappear_spare_card_placeholder.connect(judge_disappear_add_card_bar)
@@ -46,31 +57,32 @@ func main_game_refresh_card():
 	update_card_purple_sun_cost()
 	# 出战卡顺序决定快捷键位置。
 	for i: int in range(curr_cards.size()):
-		# 当前槽位卡片，统一确认出战能力后再按内容判断使用资格。
-		var card: Card = curr_cards[i]
-		if not AllCards.is_battle_card(card.card_reference):
-			card.set_card_disable()
-			continue
-		card.card_context = Card.CardContext.Battle
-		card.judge_sun_enough(sun_value)
-		card.set_shortcut((i+1)%10)
-		if not card.signal_card_use_end.is_connected(card_use_end):
-			card.signal_card_use_end.connect(card_use_end)
+		# 同槽两层分别设置战斗用途及结算信号，共享槽位快捷键编号。
+		for card: Card in curr_cards[i].get_slot_cards():
+			if not AllCards.is_battle_card(card.card_reference):
+				card.set_card_disable()
+				continue
+			card.card_context = Card.CardContext.Battle
+			card.judge_sun_enough(sun_value)
+			card.set_shortcut((i+1)%10)
+			if not card.signal_card_use_end.is_connected(card_use_end):
+				card.signal_card_use_end.connect(card_use_end)
+		curr_cards[i].set_shared_slot_layer(false)
 	judge_disappear_add_card_bar()
 
 ## 下一轮重选前恢复选择上下文和冷却，解除本轮的使用结算。
 func start_next_game_card_slot_battle_update():
 	# 本轮保留的卡片顺序不变。
 	for i: int in range(curr_cards.size()):
-		# 需要恢复为选卡交互的卡片。
-		var card: Card = curr_cards[i]
-		card.card_context = Card.CardContext.Selection
-		## 卡牌冷却结束,可以点击
-		card.set_card_cool_end()
-		card.card_ready()
-		card.set_shortcut_disappear()
-		if card.signal_card_use_end.is_connected(card_use_end):
-			card.signal_card_use_end.disconnect(card_use_end)
+		# 两层均执行原有轮间重选恢复，选卡画面固定显示墓碑吞噬者。
+		for card: Card in curr_cards[i].get_slot_cards():
+			card.card_context = Card.CardContext.Selection
+			card.set_card_cool_end()
+			card.card_ready()
+			card.set_shortcut_disappear()
+			if card.signal_card_use_end.is_connected(card_use_end):
+				card.signal_card_use_end.disconnect(card_use_end)
+		curr_cards[i].set_shared_slot_layer(false)
 
 ## [param card] 成功使用后扣除当前阳光价格，并开始原有冷却。
 func card_use_end(card:Card):
@@ -100,7 +112,7 @@ func judge_disappear_add_card_bar():
 func update_card_purple_sun_cost():
 	await get_tree().process_frame
 	# 本次仍在槽中的卡片。
-	for card: Card in curr_cards:
+	for card: Card in get_all_cards():
 		if card.card_reference.card_type != ResourceCardReference.CardType.Plant:
 			continue
 		# 紫卡的植物内容编号，用于查询本关同种植物数量。

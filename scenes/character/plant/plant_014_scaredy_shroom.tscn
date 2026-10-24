@@ -1,7 +1,7 @@
-[gd_scene load_steps=44 format=3 uid="uid://mrgea1notfc4"]
+[gd_scene load_steps=41 format=3 uid="uid://mrgea1notfc4"]
 
 [ext_resource type="Script" uid="uid://biw3o2t4rr2yr" path="res://scripts/util/speed_timer.gd" id="speed_timer"]
-[ext_resource type="PackedScene" uid="uid://c5cke4cm02um7" path="res://scenes/character/plant/plant_000_base.tscn" id="1_rixsb"]
+[ext_resource type="PackedScene" path="res://scenes/character/plant/plant_000_awake_base.tscn" id="1_rixsb"]
 [ext_resource type="Texture2D" uid="uid://d1ync1uai7er" path="res://assets/reanim/ScaredyShroom_head_inner.png" id="2_6htc2"]
 [ext_resource type="Script" uid="uid://ocomsy14xung" path="res://scripts/character/plant/plant_014_scaredy_shroom.gd" id="2_esfqn"]
 [ext_resource type="Texture2D" uid="uid://btr2esyduvxjn" path="res://assets/reanim/ScaredyShroom_stem.png" id="3_esfqn"]
@@ -16,11 +16,12 @@
 [ext_resource type="Animation" uid="uid://n2bc4c5ootw2" path="res://animation/character/plant/014_scaredy_shroom/ScaredyShroom_idle.tres" id="13_1pdss"]
 [ext_resource type="Animation" uid="uid://c0rscs7awmh6t" path="res://animation/character/plant/014_scaredy_shroom/ScaredyShroom_scared.tres" id="14_3wosj"]
 [ext_resource type="Animation" uid="uid://cu4gugoc8ey8" path="res://animation/character/plant/014_scaredy_shroom/ScaredyShroom_scaredidle.tres" id="15_658uw"]
-[ext_resource type="Animation" uid="uid://wl32oegoyf56" path="res://animation/character/plant/014_scaredy_shroom/ScaredyShroom_shooting.tres" id="16_ingpg"]
 [ext_resource type="Animation" uid="uid://cxl6ver7rvf52" path="res://animation/character/plant/014_scaredy_shroom/ScaredyShroom_sleep.tres" id="17_uifxs"]
 [ext_resource type="Script" uid="uid://bafp0ax1lmlge" path="res://scripts/character/components/detect_component/component_detect.gd" id="19_68pw3"]
 [ext_resource type="Script" uid="uid://djb8gwri8n6tg" path="res://scripts/character/components/component_scaredy.gd" id="19_tthcx"]
-[ext_resource type="Script" uid="uid://d27ifln7bjwup" path="res://scripts/character/components/attack_behavior_component/component_attack_bullet_base.gd" id="20_wh8am"]
+[ext_resource type="Script" path="res://scripts/character/components/attack_behavior_component/component_attack_scaredy_gloom.gd" id="20_wh8am"]
+
+[ext_resource type="PackedScene" path="res://scenes/fx/plant_effect/gloom_pulse_clouds.tscn" id="shared_gloom_clouds"]
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_ftdw2"]
 _data = {
@@ -28,16 +29,8 @@ _data = {
 &"ScaredyShroom_idle": ExtResource("13_1pdss"),
 &"ScaredyShroom_scared": ExtResource("14_3wosj"),
 &"ScaredyShroom_scaredidle": ExtResource("15_658uw"),
-&"ScaredyShroom_shooting": ExtResource("16_ingpg"),
 &"ScaredyShroom_sleep": ExtResource("17_uifxs")
 }
-
-[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_inx5s"]
-animation = &"ScaredyShroom_shooting"
-
-[sub_resource type="AnimationNodeOneShot" id="AnimationNodeOneShot_y05nn"]
-fadein_time = 0.3
-fadeout_time = 0.3
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_fn8k4"]
 animation = &"ScaredyShroom_grow"
@@ -104,27 +97,19 @@ states/Start/position = Vector2(196, 79)
 transitions = ["Start", "ScaredyShroom_sleep", SubResource("AnimationNodeStateMachineTransition_oxht4"), "ScaredyShroom_sleep", "ScaredyShroom_idle", SubResource("AnimationNodeStateMachineTransition_und8k"), "ScaredyShroom_idle", "ScaredyShroom_scared", SubResource("AnimationNodeStateMachineTransition_6yjsh"), "ScaredyShroom_scared", "ScaredyShroom_scaredidle", SubResource("AnimationNodeStateMachineTransition_mi268"), "ScaredyShroom_scaredidle", "ScaredyShroom_grow", SubResource("AnimationNodeStateMachineTransition_sk62e"), "ScaredyShroom_grow", "ScaredyShroom_idle", SubResource("AnimationNodeStateMachineTransition_ftdw2"), "Start", "ScaredyShroom_idle", SubResource("AnimationNodeStateMachineTransition_ign1g"), "ScaredyShroom_idle", "ScaredyShroom_sleep", SubResource("AnimationNodeStateMachineTransition_tthcx")]
 graph_offset = Vector2(108, -31)
 
-[sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_vxwj0"]
-
 [sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_r2lu0"]
 
 [sub_resource type="AnimationNodeBlendTree" id="AnimationNodeBlendTree_erinp"]
 graph_offset = Vector2(-222.17, 45.9709)
 nodes/output/position = Vector2(640, 160)
-nodes/Animation/node = SubResource("AnimationNodeAnimation_inx5s")
-nodes/Animation/position = Vector2(-300, 360)
-nodes/OneShot/node = SubResource("AnimationNodeOneShot_y05nn")
-nodes/OneShot/position = Vector2(200, 160)
 nodes/StateMachine/node = SubResource("AnimationNodeStateMachine_iwvsu")
 nodes/StateMachine/position = Vector2(-180, 120)
 nodes/TimeScale/node = SubResource("AnimationNodeTimeScale_r2lu0")
 nodes/TimeScale/position = Vector2(420, 160)
-"nodes/TimeScale 2/node" = SubResource("AnimationNodeTimeScale_vxwj0")
-"nodes/TimeScale 2/position" = Vector2(0, 340)
-node_connections = [&"output", 0, &"TimeScale", &"OneShot", 0, &"StateMachine", &"OneShot", 1, &"TimeScale 2", &"TimeScale", 0, &"OneShot", &"TimeScale 2", 0, &"Animation"]
+node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_tthcx"]
-size = Vector2(1000, 5)
+size = Vector2(238, 204)
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_n8m1a"]
 radius = 109.0
@@ -134,8 +119,8 @@ height = 378.0
 script = ExtResource("2_esfqn")
 is_scared = false
 plant_type = 14
-is_sleep_in_day = true
-node_no_change_direction = [NodePath("HpComponent"), NodePath("SleepComponent"), null]
+is_sleep_in_day = false
+node_no_change_direction = [NodePath("HpComponent")]
 node2d_detect_in_slope = [NodePath("HurtBoxComponent/HurtBoxDetection"), NodePath("AttackComponent/DetectComponent"), NodePath("ScaredyComponent")]
 
 [node name="BodyCorrect" parent="Body" index="0"]
@@ -220,12 +205,8 @@ centered = false
 visible = false
 centered = false
 
-[node name="Marker2DBullet" type="Marker2D" parent="Body/BodyCorrect" index="14"]
-position = Vector2(45, 51)
-scale = Vector2(0.5, 0.592593)
-
-[node name="SleepComponent" parent="." index="4" node_paths=PackedStringArray("sleep_influence_components")]
-sleep_influence_components = [NodePath("../BlinkComponent"), NodePath("../ScaredyComponent"), NodePath("../AttackComponent")]
+[node name="HpComponent" parent="." index="3"]
+max_hp = 900
 
 [node name="BlinkComponent" parent="." index="5"]
 is_enable_default = false
@@ -240,22 +221,18 @@ deterministic = false
 tree_root = SubResource("AnimationNodeBlendTree_erinp")
 advance_expression_base_node = NodePath("..")
 anim_player = NodePath("../AnimationPlayer")
-parameters/OneShot/active = false
-parameters/OneShot/internal_active = false
-parameters/OneShot/request = 0
 parameters/TimeScale/scale = 1.0
-"parameters/TimeScale 2/scale" = 2.0
 
-[node name="AttackComponent" type="Node2D" parent="." index="10" node_paths=PackedStringArray("markers_2d_bullet")]
+[node name="AttackComponent" type="Node2D" parent="." index="10"]
 script = ExtResource("20_wh8am")
-attack_bullet_type = 5
-markers_2d_bullet = [NodePath("../Body/BodyCorrect/Marker2DBullet")]
+is_lane = false
+attack_cd = 2.0
+attack_bullet_type = 4
+attack_sfx = &"Fume"
 
-[node name="BulletAttackCdTimer" type="Timer" parent="AttackComponent" index="0"]
-script = ExtResource("speed_timer")
-
-[node name="DetectComponent" type="Node2D" parent="AttackComponent" index="1"]
+[node name="DetectComponent" type="Node2D" parent="AttackComponent" index="0"]
 script = ExtResource("19_68pw3")
+is_lane = false
 
 [node name="Area2D" type="Area2D" parent="AttackComponent/DetectComponent" index="0"]
 position = Vector2(0, -25)
@@ -263,12 +240,15 @@ collision_layer = 0
 collision_mask = 4
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="AttackComponent/DetectComponent/Area2D" index="0"]
-position = Vector2(500, 0)
+position = Vector2(0, -2)
 shape = SubResource("RectangleShape2D_tthcx")
+
+[node name="BulletAttackCdTimer" type="Timer" parent="AttackComponent" index="1"]
+script = ExtResource("speed_timer")
 
 [node name="ScaredyComponent" type="Node2D" parent="." index="11" node_paths=PackedStringArray("scaredy_influence_components")]
 script = ExtResource("19_tthcx")
-scaredy_influence_components = [NodePath("../AttackComponent")]
+scaredy_influence_components = []
 
 [node name="DetectComponent" type="Node2D" parent="ScaredyComponent" index="0"]
 script = ExtResource("19_68pw3")
@@ -285,5 +265,7 @@ monitorable = false
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ScaredyComponent/DetectComponent/Area2D" index="0"]
 rotation = 1.57079
 shape = SubResource("CapsuleShape2D_n8m1a")
+
+[node name="AllBullet_FX" parent="." index="12" instance=ExtResource("shared_gloom_clouds")]
 
 [connection signal="timeout" from="AttackComponent/BulletAttackCdTimer" to="AttackComponent" method="_on_bullet_attack_cd_timer_timeout"]

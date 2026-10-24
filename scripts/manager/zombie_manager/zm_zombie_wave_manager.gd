@@ -5,6 +5,8 @@ class_name ZombieWaveManager
 #region 波次管理器参数
 ## 是否有墓碑,即墓碑是否生成僵尸
 var is_have_tombston := false
+## 本关每次大波新增墓碑数；-1保留原随机1～3座规则。
+var big_wave_tombstone_num: int = -1
 ## 一轮游戏最大波次
 var max_wave_one_round :int
 #endregion
@@ -59,6 +61,7 @@ func _ready() -> void:
 ## 初始化波次管理器
 func init_zombie_wave_manager(game_para:ResourceLevelData):
 	is_have_tombston = game_para.is_have_tombston
+	big_wave_tombstone_num = game_para.big_wave_tombstone_num
 	max_wave_one_round = game_para.max_wave
 	## 如果存在存档
 	if game_para.save_game_data_main_game:
@@ -177,7 +180,9 @@ func call_tombstone_create_zombie():
 	var refresh_generation: int = _refresh_generation
 	if not _is_wave_refresh_current(refresh_generation):
 		return
-	EventBus.push_event("create_tombstone", [randi()%3+1])
+	# 黑夜关卡配置固定3座；未配置的其他关卡继续沿用原随机数量。
+	var new_tombstone_num: int = big_wave_tombstone_num if big_wave_tombstone_num >= 0 else randi()%3+1
+	EventBus.push_event("create_tombstone", [new_tombstone_num])
 	await get_tree().create_timer(1.0, false).timeout
 	if not _is_wave_refresh_current(refresh_generation):
 		return

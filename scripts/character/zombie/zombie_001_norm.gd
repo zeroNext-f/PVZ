@@ -1,4 +1,4 @@
-## 普僵及其继承角色；全模式普僵获得同类生命加成，路障与铁桶存活后可为最近普僵换装。
+## 普僵及其继承角色；全模式普通群体成长，路障与铁桶可为最近普通或铁门添加防具。
 extends Zombie000Base
 class_name Zombie001Norm
 
@@ -43,6 +43,10 @@ const ADVENTURE_BUCKET_DELAY: float = 10.0
 var _adventure_armor_attempted: bool = false
 ## 单次换装等待计时器，服从游戏暂停和全局游戏速度。
 var _adventure_armor_timer: Timer
+## 本实例是否已经接受过换装传播；防具被打掉或吸走后也不清除，禁止再次接受传播。
+var has_received_adventure_armor:bool = false
+## 传播得到的铁桶铁器；铁门仍存在时保留原铁门铁器入口，门消失后再切换至此节点。
+var _adventure_bucket_iron:IronNodeArmor
 
 
 ## 按 [param other_count] 个其他存活普通僵尸同步生命上限与当前生命，保留已受伤害。[br]
@@ -99,14 +103,19 @@ func _on_adventure_armor_timeout() -> void:
 	Global.main_game.zombie_manager.equip_nearest_adventure_norm(self)
 
 
-## 将本普僵原地更换为 [param armor_type] 指定的路障或铁桶，返回是否成功。[br]
-## 继承本体最大、当前血量和状态，不触发死亡或生成计数；防具资源取自对应正式场景。
+## 为普通或铁门添加 [param armor_type] 对应的一类防具，返回是否成功。[br]
+## 普通转换编号并继续传播；铁门保留全部原属性与二类防具，不成为传播源；每个目标最多接受一次。
 func equip_adventure_armor(armor_type: CharacterRegistry.ZombieType) -> bool:
-	if zombie_type != CharacterRegistry.ZombieType.Z001Norm or is_death or hp_component.is_death \
+	if zombie_type not in [CharacterRegistry.ZombieType.Z001Norm, CharacterRegistry.ZombieType.Z007ScreenDoor] \
+		or is_death or hp_component.is_death \
 		or is_queued_for_deletion() or not is_instance_valid(Global.main_game):
+		return false
+	if has_received_adventure_armor or (hp_component as HpComponentZombie).curr_hp_armor1 > 0:
 		return false
 	if armor_type not in [CharacterRegistry.ZombieType.Z003Cone, CharacterRegistry.ZombieType.Z005Bucket]:
 		return false
+	# 铁门只添加防具，不转换编号、体型、攻击、二类防具或传播身份。
+	var preserve_screen_door:bool = zombie_type == CharacterRegistry.ZombieType.Z007ScreenDoor
 	# 离树模板只用于读取正式场景的防具资源，不启动其生命周期或计时。
 	var template: Zombie001Norm = Global.character_registry.get_zombie_info(
 		armor_type, CharacterRegistry.ZombieInfoAttribute.ZombieScenes).instantiate() as Zombie001Norm
@@ -121,6 +130,9 @@ func equip_adventure_armor(armor_type: CharacterRegistry.ZombieType) -> bool:
 	var armor_sprite: Sprite2D = get_node("Body/BodyCorrect/" + armor_name + "/" + armor_name) as Sprite2D
 	var template_sprite: Sprite2D = template.get_node("Body/BodyCorrect/" + armor_name + "/" + armor_name) as Sprite2D
 	armor_sprite.texture = template_sprite.texture
+	# 只显示此次添加的帽子，继续使用共用动画中已有的位移与旋转轨道。
+	get_node("Body/BodyCorrect/Anim_cone").visible = false
+	get_node("Body/BodyCorrect/Anim_bucket").visible = false
 	get_node("Body/BodyCorrect/" + armor_name).visible = true
 	# 普僵场景没有防具掉落物，复制正式防具场景的节点以支持破甲表现。
 	var armor_drop: ZombieDropBase = template.get_node("Body/NodeDrop/Node2D_Arm1_Drop").duplicate() as ZombieDropBase
@@ -138,30 +150,48 @@ func equip_adventure_armor(armor_type: CharacterRegistry.ZombieType) -> bool:
 	current_hp.sfx_be_attack_armor1 = template_hp.sfx_be_attack_armor1
 	current_hp.curr_hp_armor1 = current_hp.max_hp_armor1
 	current_hp.armor_1_control.visible = true
-	# 先改变编号，随后普僵群体刷新会自动排除此实例，其本体血量从此固定继承。
-	zombie_type = armor_type
-	# 换装后的机制体型跟随正式角色场景；当前路障与铁桶均为小体型。
-	zombie_body_size = template.zombie_body_size
+	if not preserve_screen_door:
+		# 普通保留原转换规则，铁门不进入此分支。
+		zombie_type = armor_type
+		zombie_body_size = template.zombie_body_size
 	if armor_type == CharacterRegistry.ZombieType.Z005Bucket:
 		# 铁桶铁器独立复制并重新绑定当前角色的精灵，避免引用即将释放的模板。
 		var bucket_iron: IronNodeArmor = template.get_node("Body/BodyCorrect/IronNode").duplicate() as IronNodeArmor
+		bucket_iron.name = "PropagationBucketIron"
 		get_node("Body/BodyCorrect").add_child(bucket_iron)
 		bucket_iron.owner = self
 		bucket_iron.iron_armor_sprite = bucket_iron.get_node("Anim_bucket") as Sprite2D
 		bucket_iron.body_armor_sprite = armor_sprite
 		bucket_iron.all_disappear_nodes = [armor_drop]
-		iron_type = IronType.IronArmor1
-		iron_node = bucket_iron
-		# 普僵出生时没有铁器，此处补齐铁桶破甲后清除铁器类型的连接。
-		current_hp.signal_armor1_death.connect(_on_adventure_bucket_armor_lost)
+		_adventure_bucket_iron = bucket_iron
+		if not preserve_screen_door or current_hp.curr_hp_armor2 <= 0:
+			iron_type = IronType.IronArmor1
+			iron_node = bucket_iron
+		# 铁门尚存时继续允许磁力菇吸门，门消失后仍可吸走剩余铁桶。
+		if preserve_screen_door and not current_hp.signal_armor2_death.is_connected(_on_adventure_screen_door_lost):
+			current_hp.signal_armor2_death.connect(_on_adventure_screen_door_lost)
+		if not current_hp.signal_armor1_death.is_connected(_on_adventure_bucket_armor_lost):
+			current_hp.signal_armor1_death.connect(_on_adventure_bucket_armor_lost)
 	template.free()
-	start_adventure_armor_timer()
+	has_received_adventure_armor = true
+	if not preserve_screen_door:
+		start_adventure_armor_timer()
 	return true
 
 
-## 转换出的铁桶破甲或被磁力菇吸走时，沿用正式铁桶的无铁器状态。
+## 铁桶耗尽时保留仍存活的铁门铁器，其余情况恢复无铁器状态。
 func _on_adventure_bucket_armor_lost() -> void:
+	if zombie_type == CharacterRegistry.ZombieType.Z007ScreenDoor \
+		and (hp_component as HpComponentZombie).curr_hp_armor2 > 0:
+		return
 	iron_type = IronType.Null
+
+
+## 铁门消失后，仅在传播铁桶仍有耐久时切换磁力目标，不影响原二类防具脱落表现。
+func _on_adventure_screen_door_lost() -> void:
+	if (hp_component as HpComponentZombie).curr_hp_armor1 > 0 and is_instance_valid(_adventure_bucket_iron):
+		iron_type = IronType.IronArmor1
+		iron_node = _adventure_bucket_iron
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:

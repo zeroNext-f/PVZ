@@ -55,15 +55,14 @@ func _set_shovel_look_target(candidate: Variant) -> void:
 	if is_instance_valid(plant_be_shovel_look):
 		plant_be_shovel_look.be_shovel_look()
 
-## 同格有多个植物时，根据鼠标位置更新预铲目标。
+## 每帧刷新预铲目标，覆盖临时大喷菇发射死亡及同格新增叠种的情况。
 func item_process() -> void:
 	if curr_hm_item_status == E_HmItemStatus.Glove:
 		hm_glove.item_process()
 		return
-	if curr_shovel_look_plant_num >= 2 \
-			and is_instance_valid(curr_plant_cell):
+	if curr_hm_item_status == E_HmItemStatus.Shovel and is_instance_valid(curr_plant_cell):
 		_set_shovel_look_target(
-			curr_plant_cell.return_plant_be_shovel_look()
+			curr_plant_cell.get_shovel_target()
 		)
 
 ## [param plant_cell] 当前进入或重新刷新的格子；没有植物时清理旧预铲。
@@ -75,7 +74,7 @@ func mouse_enter(plant_cell: PlantCell) -> void:
 	if curr_hm_item_status == E_HmItemStatus.Shovel:
 		curr_shovel_look_plant_num = plant_cell.get_curr_plant_num()
 		_set_shovel_look_target(
-			plant_cell.return_plant_be_shovel_look()
+			plant_cell.get_shovel_target()
 		)
 
 ## [param plant_cell] 移出的格子，保留接口参数；结束当前预铲并清理格子状态。
@@ -92,12 +91,13 @@ func mouse_exit(plant_cell: PlantCell) -> void:
 
 ## 点击使用当前工具，返回 true 时结束手持；手套第一次拿起后返回 false。[br]
 ## [param plant_cell] 点击的格子，目标已释放时不执行铲除或搬运。
-@warning_ignore("unused_parameter")
 func click_cell(plant_cell:PlantCell) -> bool:
 	match curr_hm_item_status:
 		E_HmItemStatus.Glove:
 			return hm_glove.click_cell(plant_cell)
 		E_HmItemStatus.Shovel:
+			# 点击当刻重新选择，避免上一帧目标已发射死亡或刚有大喷菇叠种。
+			_set_shovel_look_target(plant_cell.get_shovel_target())
 			if is_instance_valid(plant_be_shovel_look):
 				SoundManager.play_other_SFX("plant2")
 				plant_be_shovel_look.be_shovel_kill()

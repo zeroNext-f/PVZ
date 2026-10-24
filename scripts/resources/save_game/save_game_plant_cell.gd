@@ -8,3 +8,5 @@ class_name ResourceSaveGamePlantCell
 @export var plant_type_in_cell:Dictionary[CharacterRegistry.PlacePlantInCell, Dictionary] =  {}
 ## 是否有梯子
 @export var is_ladder:bool = false
+## 不占场地种植层的大喷菇数据，与本格已有植物分别保存；旧档默认空。
+@export var temporary_fume_data: Array[Dictionary] = []

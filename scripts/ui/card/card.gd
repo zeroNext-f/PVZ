@@ -19,6 +19,14 @@ enum CardContext {
 
 ## 当前实例的点击用途；创建入口应在入树前设置。
 var card_context: CardContext = CardContext.Catalog
+## 魅惑菇收编生成的单次僵尸卡：免费任意格放置、出生魅惑，并严格按临时卡期限销毁。
+var is_hypno_zombie_card: bool = false
+## 共用槽位的下层卡，仅墓碑吞噬者作为槽位根保存；两张卡始终是独立运行实例。
+var shared_slot_partner: Card
+## 下层卡指向墓碑吞噬者槽位根；不参与卡牌身份或模板注册。
+var shared_slot_owner: Card
+## 当前卡是否位于共用槽位上层；下层禁用输入，仍按正常_process推进冷却。
+var shared_slot_active: bool = true
 ## 是否处于冷却中。
 var _is_cooling: bool = false
 ## 当前费用是否已被卡槽判定为足够。
@@ -45,6 +53,9 @@ signal signal_card_use_end(card: Card)
 ## 初始化参数与模仿外观；僵王的选卡和战斗实例显示费用，目录及图鉴实例只保留外观。
 func _ready() -> void:
 	super()
+	# 卡牌从已就绪模板复制时可能已有此信号，避免重复连接输出错误。
+	if not button.gui_input.is_connected(_on_shared_slot_gui_input):
+		button.gui_input.connect(_on_shared_slot_gui_input)
 	_cool_mask.value = 0
 	if card_reference == null or not card_reference.is_valid():
 		is_can_click = false
@@ -107,6 +118,9 @@ func judge_sun_enough(curr_sun_value: int) -> void:
 
 ## 结合类别、费用、冷却、僵王召唤资格和紫卡前置条件更新可用状态；非出战卡牌不能就绪。
 func judge_card_ready() -> void:
+	if card_context == CardContext.Battle and not shared_slot_active:
+		card_not_can_click()
+		return
 	if not AllCards.is_battle_card(card_reference):
 		is_can_click = false
 		return
@@ -138,6 +152,9 @@ func set_card_cool_end() -> void:
 
 ## 标记卡牌就绪并隐藏不可用遮罩。
 func card_ready() -> void:
+	if card_context == CardContext.Battle and not shared_slot_active:
+		card_not_can_click()
+		return
 	_cool_mask.hide()
 	is_can_click = true
 
@@ -159,6 +176,10 @@ func card_cool() -> void:
 
 ## 按显式用途分发点击；战斗入口额外拒绝不支持出战的内容。
 func _on_button_pressed() -> void:
+	# 快捷键按物理槽位定位到根卡，切换至下层时转交给该槽位当前可见卡。
+	if card_context == CardContext.Battle and is_instance_valid(shared_slot_partner) and not shared_slot_active:
+		shared_slot_partner._on_button_pressed()
+		return
 	match card_context:
 		CardContext.Almanac:
 			signal_card_click.emit(self)
@@ -166,6 +187,8 @@ func _on_button_pressed() -> void:
 			if AllCards.is_battle_card(card_reference):
 				signal_card_click.emit(self)
 		CardContext.Battle:
+			if not shared_slot_active:
+				return
 			if not is_instance_valid(Global.main_game) or Global.main_game.main_game_progress != MainGameManager.E_MainGameProgress.MAIN_GAME:
 				return
 			# 显式禁用的卡片不能由点击时的就绪重算重新启用。
@@ -179,6 +202,47 @@ func _on_button_pressed() -> void:
 				EventBus.push_event("main_game_click_card", [self])
 			else:
 				SoundManager.play_other_SFX("buzzer")
+
+
+## 返回该物理槽位的全部卡片，顺序为墓碑吞噬者、下层卡；普通槽位仅返回自身。
+func get_slot_cards() -> Array[Card]:
+	# 调用下层时也统一返回槽位根的列表。
+	if is_instance_valid(shared_slot_owner):
+		return shared_slot_owner.get_slot_cards()
+	# 独立返回数组，避免外部修改卡牌关联。
+	var cards: Array[Card] = [self]
+	if is_instance_valid(shared_slot_partner):
+		cards.append(shared_slot_partner)
+	return cards
+
+## [param show_partner] 决定哪一张显示在上层；仅切换可见性和使用资格，不改费用或冷却。
+func set_shared_slot_layer(show_partner: bool) -> void:
+	if is_instance_valid(shared_slot_owner):
+		shared_slot_owner.set_shared_slot_layer(show_partner)
+		return
+	shared_slot_active = not show_partner or not is_instance_valid(shared_slot_partner)
+	visible = shared_slot_active
+	if is_instance_valid(shared_slot_partner):
+		shared_slot_partner.shared_slot_active = not shared_slot_active
+		shared_slot_partner.visible = not shared_slot_active
+		shared_slot_partner.judge_card_ready()
+	judge_card_ready()
+
+## [param event] 右键卡片时循环交换上下层；只有正式战斗的共用槽位响应。
+func _on_shared_slot_gui_input(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton) or event.button_index != MOUSE_BUTTON_RIGHT or not event.pressed \
+		or card_context != CardContext.Battle or not is_instance_valid(Global.main_game) \
+		or Global.main_game.main_game_progress != MainGameManager.E_MainGameProgress.MAIN_GAME:
+		return
+	# 当前可见卡可能是下层；切换始终通过槽位根执行。
+	var root_card: Card = shared_slot_owner if is_instance_valid(shared_slot_owner) else self
+	if not is_instance_valid(root_card.shared_slot_partner):
+		return
+	# 右键兼容原手持取消语义，不允许切层后继续使用已经被禁用的旧卡。
+	Global.main_game.hand_manager.curr_hm_status = HandManager.E_HandManagerStatus.Null
+	root_card.set_shared_slot_layer(root_card.shared_slot_active)
+	SoundManager.play_other_SFX("tap")
+	button.accept_event()
 
 
 ## 显示 [param i] 对应的卡槽快捷键编号；僵王只在战斗用途下分配快捷键。

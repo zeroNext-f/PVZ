@@ -150,8 +150,8 @@ static func _disconnect_cell(plant:Plant000Base, cell:PlantCell) -> void:
 		plant.signal_character_death.disconnect(callback)
 
 
-## [param plant] 底层支撑植物；[param cell] 原格子。空的普通层和壳层容器留在原格。
-static func _detach_support(plant:Plant000DownBase, cell:PlantCell) -> void:
+## [param _plant] 保留的底层支撑植物接口参数；[param cell] 原格子。空的普通层和壳层容器留在原格。
+static func _detach_support(_plant:Plant000DownBase, cell:PlantCell) -> void:
 	for slot:int in [CharacterRegistry.PlacePlantInCell.Norm, CharacterRegistry.PlacePlantInCell.Shell]:
 		# 保留原格容器，不随支撑植物一起搬走。
 		var container:Control = cell.plant_container_node[slot]

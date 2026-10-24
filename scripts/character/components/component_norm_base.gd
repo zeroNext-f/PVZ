@@ -30,6 +30,8 @@ enum E_IsEnableFactor{
 	DownGround,	## 矿工在地下禁用攻击组件
 	Garlic,		## 大蒜禁用攻击组件
 	GameMode,	## 游戏模式，我是僵尸禁用生产组件
+	FootballCharge,	## 橄榄球冲刺及前扑期间禁止啃食，独立于其他禁用原因。
+	FootballLaunch,	## 被橄榄球顶飞时暂时禁止攻击，落地只撤销这一原因。
 }
 
 ## 按原因记录的启用开关；所有已记录因素都为 true 时组件才可启用。

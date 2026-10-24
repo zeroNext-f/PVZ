@@ -34,7 +34,7 @@ func _candidates_position(rows:int, cols_start:int, cols_end:int=plant_cell_mana
 	for r in range(rows):
 		for c in range(cols_start, cols_end):
 			## 如果没有墓碑
-			if not all_is_tombstone[r][c]:
+			if not all_is_tombstone[r][c] and plant_cell_manager.all_plant_cells[r][c].can_create_tombstone():
 				candidates.append(Vector2i(r, c))
 
 	# 打乱顺序确保随机性
@@ -75,8 +75,29 @@ func _reandom_tombstone_pos(new_num:int) ->  Array[Vector2i]:
 
 	return selected_positions
 
+## [param plant_cell] 技能指定的实际格子；完整登记墓碑数量、存档与吞碑删除通知，不改变随机生碑规则。
+## 返回是否创建成功，已有墓碑、格子无效或尚未初始化时不重复创建。
+func create_tombstone_at_cell(plant_cell:PlantCell) -> bool:
+	if not is_instance_valid(plant_cell) or plant_cell.is_queued_for_deletion() or is_instance_valid(plant_cell.tombstone):
+		return false
+	if not plant_cell.can_create_tombstone():
+		return false
+	# 根据实际格子数组定位，避免编辑器子节点的倒序索引混入墓碑登记表。
+	var row:int = plant_cell.row_col.x
+	if row < 0 or row >= plant_cell_manager.all_plant_cells.size() or row >= all_is_tombstone.size():
+		return false
+	# 本行对应的实际列号。
+	var column:int = plant_cell_manager.all_plant_cells[row].find(plant_cell)
+	if column < 0 or column >= all_is_tombstone[row].size() or all_is_tombstone[row][column]:
+		return false
+	_create_one_tombstone(plant_cell, Vector2i(row, column))
+	return true
+
 ## 创建一个墓碑
 func _create_one_tombstone(plant_cell: PlantCell, pos:Vector2i):
+	# 统一拦截随机生成、技能指定和读档恢复，禁止地形不登记数量或删除植物。
+	if not plant_cell.can_create_tombstone():
+		return
 	assert(not is_instance_valid(plant_cell.tombstone))
 	assert(not all_is_tombstone[pos.x][pos.y], "第"+str(pos)+"墓碑有问题")
 

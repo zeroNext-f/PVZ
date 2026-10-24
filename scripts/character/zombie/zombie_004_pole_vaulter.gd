@@ -18,6 +18,17 @@ func ready_norm() -> void:
 	super()
 	detect_component.disable_component(ComponentNormBase.E_IsEnableFactor.Jump)
 
+## 魅惑撑杆不再将友方植物作为跨越目标，保留其他原有检测位及阵营转换流程。
+## 已开始的跳跃继续收势，但解除原植物的坐标补偿和高坚果阻跳记录。
+func be_hypno():
+	jump_component.ignore_plant_targets = true
+	jump_component.is_jump_compensate = false
+	jump_component.is_jump_stop = false
+	# 仅删除植物检测层2，其他原有检测（例如保龄球层64）不扩大也不移除。
+	var jump_area: Area2D = $JumpComponent/Area2D
+	jump_area.set_deferred("collision_mask", jump_area.collision_mask & ~2)
+	super()
+
 ## 初始化正常出战角色信号连接
 func ready_norm_signal_connect():
 	super()

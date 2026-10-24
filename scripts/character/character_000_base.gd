@@ -21,12 +21,14 @@ enum E_TimerType{
 	IceDecelerate,	## 冰冻减速
 	IceFreeze,		## 冰冻停滞
 	Butter,			## 黄油
+	Poison,			## 剧毒独立扣血计时，不受个体动作速度影响。
 }
-## 减速相关计时器(第一次使用时创建)
+## 异常状态计时器（第一次使用时创建），各状态独立计时。
 var all_timer:Dictionary[E_TimerType, Timer] = {
 	E_TimerType.IceDecelerate:null,
 	E_TimerType.IceFreeze:null,
 	E_TimerType.Butter:null,
+	E_TimerType.Poison:null,
 }
 #endregion
 
@@ -62,6 +64,7 @@ enum E_Influence_Speed_Factor{
 	Butter,			## 黄油
 	EatGarlic,		## 啃食大蒜后短时间停止
 	OutBattlefield,	## 宽屏战场外僵尸移动加速
+	FootballLaunch,	## 顶飞期间保持当前模型姿态，落地恢复原动作速度因素。
 }
 ## 是否被魅惑
 var is_hypno:bool = false

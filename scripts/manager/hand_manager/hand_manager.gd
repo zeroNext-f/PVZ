@@ -92,6 +92,10 @@ func _click_glove() -> void:
 
 ## [param progress] 离开正式战斗时取消手套，避免切轮或结算遗留来源引用和预览。
 func _on_tool_progress_update(progress:MainGameManager.E_MainGameProgress) -> void:
+	if progress != MainGameManager.E_MainGameProgress.MAIN_GAME and curr_hm_status == E_HandManagerStatus.Character \
+		and (hm_character.is_hypno_capture() or (is_instance_valid(hm_character.curr_card) \
+		and hm_character.curr_card.is_hypno_zombie_card)):
+		curr_hm_status = E_HandManagerStatus.Null
 	if progress != MainGameManager.E_MainGameProgress.MAIN_GAME and curr_hm_status == E_HandManagerStatus.Item \
 		and hm_item.curr_hm_item_status == HM_Item.E_HmItemStatus.Glove:
 		curr_hm_status = E_HandManagerStatus.Null
@@ -132,6 +136,13 @@ func _on_cell_mouse_exit(plant_cell:PlantCell):
 
 ## 取消角色和道具
 func _input(event):
+	# 魅惑菇以僵尸受击框而非植物格按钮为点击目标，场地边缘也能正常选中。
+	if curr_hm_status == E_HandManagerStatus.Character and hm_character.is_hypno_capture() \
+		and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		if hm_character.capture_hypno_target():
+			curr_hm_status = E_HandManagerStatus.Null
+		get_viewport().set_input_as_handled()
+		return
 	## 当前手持状态不为空且鼠标点击事件
 	if curr_hm_status != E_HandManagerStatus.Null and event is InputEventMouseButton:
 		## 右键点击 或左鍵点击空白

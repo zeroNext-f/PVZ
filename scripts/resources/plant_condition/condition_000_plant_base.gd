@@ -24,6 +24,14 @@ var plant_condition:int = 22
 
 ## 判断是否可以种植
 func judge_is_can_plant(plant_cell:PlantCell, curr_plant_type:CharacterRegistry.PlantType) -> bool:
+	# 大喷菇仅忽略植物层占位，地形与普通格子禁种状态仍按正常植物规则检查。
+	if curr_plant_type == CharacterRegistry.PlantType.P011FumeShroom:
+		return is_instance_valid(plant_cell) and not plant_cell.is_queued_for_deletion() \
+			and plant_cell.can_common_plant and not is_instance_valid(plant_cell.tombstone) \
+			and (plant_condition & plant_cell.curr_condition) != 0
+	# 魅惑菇卡只对僵尸执行收编，任何地形或空格都不能将其作为场地植物种下。
+	if curr_plant_type == CharacterRegistry.PlantType.P013HypnoShroom:
+		return false
 	if not judge_planting_order(plant_cell):
 		return false
 	## 特殊植物

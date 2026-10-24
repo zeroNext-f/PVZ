@@ -119,6 +119,8 @@ func set_choose_level(curr_game_mode: MainSceneRegistry.MainScenes, curr_level_p
 @export var is_have_tombston := false
 ## 初始生成的墓碑数量
 @export var init_tombstone_num := 0
+## 每次大波新增墓碑数；-1沿用随机1～3座，0不新增，正数为固定请求数量（受可用位置限制）。
+@export_range(-1, 45, 1) var big_wave_tombstone_num: int = -1
 
 #endregion
 

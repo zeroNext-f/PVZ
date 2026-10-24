@@ -1,4 +1,4 @@
-[gd_scene load_steps=99 format=3 uid="uid://cfdenkma7cksu"]
+[gd_scene load_steps=102 format=3 uid="uid://cfdenkma7cksu"]
 
 [ext_resource type="PackedScene" uid="uid://cktksmdbn2nmn" path="res://scenes/character/zombie/zombie_000_base.tscn" id="1_t5uiv"]
 [ext_resource type="Script" uid="uid://16m6ma4s5ie4" path="res://scripts/character/zombie/zombie_006_paper.gd" id="2_nmsdc"]
@@ -54,6 +54,10 @@
 [ext_resource type="Texture2D" uid="uid://dnpuhr7ji0g6r" path="res://assets/reanim/Zombie_charred_eyes1.png" id="44_45lnk"]
 [ext_resource type="Texture2D" uid="uid://crm1gvhyudrtn" path="res://assets/reanim/Zombie_charred_eyes2.png" id="45_17kg5"]
 [ext_resource type="Script" uid="uid://jl0nl4a234bc" path="res://scripts/resources/resource_body_change.gd" id="46_g84jt"]
+
+[ext_resource type="Script" path="res://scripts/character/components/hp_component/component_hp_paper.gd" id="paper_hp"]
+[ext_resource type="Script" path="res://scripts/character/components/attack_behavior_component/component_attack_zombie_paper.gd" id="paper_attack"]
+[ext_resource type="Script" path="res://scripts/character/components/detect_component/component_detect_paper.gd" id="paper_detect"]
 
 [sub_resource type="Resource" id="Resource_6p5s8"]
 script = ExtResource("46_g84jt")
@@ -1350,6 +1354,7 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"
 script = ExtResource("2_nmsdc")
 is_gasp = false
 zombie_type = 6
+zombie_body_size = 1
 is_idle = false
 
 [node name="BodyCorrect" parent="Body" index="0"]
@@ -1600,11 +1605,14 @@ texture = ExtResource("28_x1nb6")
 centered = false
 
 [node name="HpStageChangeComponent" parent="." index="3"]
+boundary_value_hp = Array[int]([-1, -1])
+boundary_value_hp_armor2 = Array[int]([480, 240, 0])
 body_change = Array[ExtResource("46_g84jt")]([SubResource("Resource_6p5s8"), SubResource("Resource_vig6t")])
 body_change_armor2 = Array[ExtResource("46_g84jt")]([SubResource("Resource_hekb6"), SubResource("Resource_rbrsd"), SubResource("Resource_7gvwh")])
 
 [node name="HpComponent" parent="." index="4"]
-max_hp_armor2 = 150
+script = ExtResource("paper_hp")
+max_hp_armor2 = 720
 sfx_be_attack_armor2 = 1
 
 [node name="Anim_blink" type="Sprite2D" parent="CharredComponent/ZombieCharred/CharredCorrect" index="0"]
@@ -1679,3 +1687,9 @@ parameters/StateMachine/Zombie_paper_eat/TimeScale/scale = 2.0
 parameters/StateMachine/paper_gasp/StateMachine/Zombie_paper_eat_nopaper/TimeScale/scale = 2.0
 parameters/StateMachine/paper_gasp/TimeScale/scale = 2.0
 parameters/TimeScale/scale = 1.0
+
+[node name="AttackComponent" parent="." index="6"]
+script = ExtResource("paper_attack")
+
+[node name="DetectComponent" parent="AttackComponent" index="0"]
+script = ExtResource("paper_detect")

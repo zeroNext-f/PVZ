@@ -24,6 +24,17 @@ var is_mode_column: bool = false
 var characte_static_shadow_colum: Array[Node2D] = []
 ## 当前紫卡的预置植物，退出手持时恢复明暗效果。
 var curr_all_preplant_purple: Array[Plant000Base] = []
+## 独立收编交互，持有悬停提示；不创建魅惑菇战斗实例。
+var hypno_capture: HypnoCapture = HypnoCapture.new()
+
+## 返回当前是否手持魅惑菇（含模仿卡）；此卡只能对敌方僵尸使用。
+func is_hypno_capture() -> bool:
+	return is_instance_valid(curr_card) and curr_card.card_reference.card_type == ResourceCardReference.CardType.Plant \
+		and curr_card.card_reference.content_id == CharacterRegistry.PlantType.P013HypnoShroom
+
+## 点击场景中的僵尸完成收编，返回是否成功；费用结算由收编交互发送一次。
+func capture_hypno_target() -> bool:
+	return is_hypno_capture() and hypno_capture.capture(hand_manager, curr_card)
 
 ## 从所属关卡读取柱子模式。
 func init_hm_character() -> void:
@@ -31,8 +42,13 @@ func init_hm_character() -> void:
 
 ## 当前预览存在时更新为鼠标的全局位置。
 func character_process() -> void:
+	if not is_instance_valid(curr_card) or curr_card.is_queued_for_deletion():
+		hand_manager.curr_hm_status = HandManager.E_HandManagerStatus.Null
+		return
 	if is_instance_valid(characte_static):
 		characte_static.global_position = temporary_character.get_global_mouse_position()
+	if is_hypno_capture():
+		hypno_capture.update_hover(hand_manager)
 
 ## 开始手持 [param card]，建立独立预览并读取本类型条件。
 ## 返回是否成功初始化；无效引用和缺少静态预览的卡片不进入手持，不创建战斗角色。
@@ -63,7 +79,13 @@ func click_card(card: Card) -> bool:
 				start_preplant_purple_light(plant_condition, curr_card.card_reference.content_id)
 		ResourceCardReference.CardType.Zombie:
 			zombie_row_type = Global.character_registry.get_zombie_info(curr_card.card_reference.content_id, CharacterRegistry.ZombieInfoAttribute.ZombieRowType)
-	if is_mode_column and curr_card.card_reference.card_type != ResourceCardReference.CardType.ZombieBoss:
+	if curr_card.is_hypno_zombie_card:
+		characte_static.modulate = Color(1, 0.5, 1)
+		characte_static_shadow.modulate = Color(1, 0.5, 1, 0)
+		characte_static.scale.x = -absf(characte_static.scale.x)
+		characte_static_shadow.scale.x = -absf(characte_static_shadow.scale.x)
+	if is_mode_column and not is_hypno_capture() and not curr_card.is_hypno_zombie_card \
+		and curr_card.card_reference.card_type != ResourceCardReference.CardType.ZombieBoss:
 		click_card_column()
 	EventBus.push_event("hm_character_hand_card", [curr_card])
 	return true
@@ -85,6 +107,7 @@ func end_preplant_purple_light() -> void:
 
 ## 释放本次预览、恢复紫卡提示并发出原有手持清除事件。
 func _clear_curr_data() -> void:
+	hypno_capture.set_hover(null)
 	if plant_condition != null and plant_condition.is_purple_card:
 		end_preplant_purple_light()
 	is_shadow_in_cell = false
@@ -113,6 +136,8 @@ func mouse_enter(plant_cell: PlantCell) -> void:
 ## 僵王只检查召唤资格，在当前格子的普通植物位置显示虚影，不读取格子占用或行地形。
 func _update_cell_shadow(plant_cell: PlantCell, curr_characte_static_shadow: Node2D) -> bool:
 	curr_characte_static_shadow.modulate.a = 0
+	if is_hypno_capture():
+		return false
 	if not AllCards.is_battle_card(curr_card.card_reference):
 		return false
 	match curr_card.card_reference.card_type:
@@ -122,6 +147,14 @@ func _update_cell_shadow(plant_cell: PlantCell, curr_characte_static_shadow: Nod
 				curr_characte_static_shadow.modulate.a = 0.5
 				return true
 		ResourceCardReference.CardType.Zombie:
+			# 收编卡允许任意有效格，不检查占位、墓碑/冰道及水陆地形；不改普通僵尸卡。
+			if curr_card.is_hypno_zombie_card:
+				if not is_instance_valid(plant_cell) or not hand_manager.main_game.is_ancestor_of(plant_cell) \
+					or plant_cell.row_col.x < 0 or plant_cell.row_col.x >= Global.main_game.zombie_manager.all_zombie_rows.size():
+					return false
+				curr_characte_static_shadow.global_position = get_zombie_static_shadow_global_position(plant_cell)
+				curr_characte_static_shadow.modulate.a = 0.5
+				return true
 			if not plant_cell.can_common_zombie and curr_card.card_reference.content_id != CharacterRegistry.ZombieType.Z021Bungi:
 				return false
 			if plant_cell.row_col.x >= Global.main_game.zombie_manager.all_zombie_rows.size():
@@ -165,6 +198,9 @@ func mouse_exit(_plant_cell: PlantCell) -> void:
 ## 在 [param plant_cell] 确认时重验卡片可用性；成功创建后仅发送一次使用结算。
 ## 僵王再次检查召唤资格且不执行柱子复制，失败不扣费用或进入冷却。
 func click_cell(plant_cell: PlantCell) -> void:
+	if is_hypno_capture():
+		capture_hypno_target()
+		return
 	if not is_instance_valid(curr_card) or curr_card.is_queued_for_deletion() \
 		or not is_shadow_in_cell or not AllCards.is_battle_card(curr_card.card_reference):
 		return
@@ -186,7 +222,8 @@ func click_cell(plant_cell: PlantCell) -> void:
 		if curr_card.card_reference.card_type == ResourceCardReference.CardType.ZombieBoss:
 			SoundManager.play_other_SFX("buzzer")
 		return
-	if is_mode_column and curr_card.card_reference.card_type != ResourceCardReference.CardType.ZombieBoss:
+	if is_mode_column and not curr_card.is_hypno_zombie_card \
+		and curr_card.card_reference.card_type != ResourceCardReference.CardType.ZombieBoss:
 		_click_cell_column(plant_cell)
 	curr_card.signal_card_use_end.emit(curr_card)
 
@@ -195,6 +232,8 @@ func click_cell(plant_cell: PlantCell) -> void:
 func _create_character_at_cell(plant_cell: PlantCell) -> bool:
 	match curr_card.card_reference.card_type:
 		ResourceCardReference.CardType.Plant:
+			if is_hypno_capture():
+				return false
 			return plant_cell.create_plant(curr_card.card_reference.content_id, curr_card.card_reference.is_imitater) != null
 		ResourceCardReference.CardType.Zombie:
 			# 普通僵尸仍按行初始化，保留关卡模式与特殊僵尸回调。
@@ -202,7 +241,11 @@ func _create_character_at_cell(plant_cell: PlantCell) -> bool:
 				Zombie000Base.E_ZInitAttr.CharacterInitType: Character000Base.E_CharacterInitType.IsNorm,
 				Zombie000Base.E_ZInitAttr.Lane: plant_cell.row_col.x,
 			}
-			return Global.main_game.zombie_manager.create_norm_zombie(
+			if curr_card.is_hypno_zombie_card:
+				zombie_init_para[Zombie000Base.E_ZInitAttr.CurrWave] = -1
+				zombie_init_para[Zombie000Base.E_ZInitAttr.ParticipatesNaturalRefresh] = false
+			# 保留正式创建及特殊僵尸入场初始化，成功登记后立即转换阵营。
+			var zombie: Zombie000Base = Global.main_game.zombie_manager.create_norm_zombie(
 				curr_card.card_reference.content_id,
 				Global.main_game.zombie_manager.all_zombie_rows[plant_cell.row_col.x],
 				zombie_init_para,
@@ -211,7 +254,10 @@ func _create_character_at_cell(plant_cell: PlantCell) -> bool:
 					Global.main_game.zombie_manager.all_zombie_rows[plant_cell.row_col.x].zombie_create_position.global_position.y
 				),
 				GlobalUtils.get_special_zombie_callable(curr_card.card_reference.content_id, plant_cell)
-			) != null
+			)
+			if is_instance_valid(zombie) and curr_card.is_hypno_zombie_card:
+				zombie.be_hypno()
+			return is_instance_valid(zombie)
 		ResourceCardReference.CardType.ZombieBoss:
 			return hand_manager.main_game.zombie_manager.try_create_boss_from_card(curr_card.card_reference.content_id) != null
 	return false

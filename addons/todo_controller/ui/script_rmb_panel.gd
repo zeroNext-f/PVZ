@@ -14,7 +14,8 @@ var desc_no_button: Button
 
 var current_script : String
 
-var current_panel : TodoControllerPanel
+## 保存调用此菜单的主面板；使用动态引用，避免主面板预加载本场景时形成循环类型依赖。
+var current_panel : Variant
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
@@ -24,8 +25,9 @@ func _input(event: InputEvent) -> void:
 		if event.is_pressed():
 			queue_free()
 
-# TODO 脚本列表右键菜单初始化
-func set_script_rmb(_current_script : String = "", _current_panel : TodoControllerPanel = null) -> void:
+## 初始化右键菜单。[param _current_script] 为脚本路径，[param _current_panel] 为调用菜单的主面板。
+## 主面板通过动态引用传入，避免在加载菜单脚本期间重新加载其所属场景。
+func set_script_rmb(_current_script : String = "", _current_panel : Variant = null) -> void:
 	current_script = _current_script
 	current_panel = _current_panel
 

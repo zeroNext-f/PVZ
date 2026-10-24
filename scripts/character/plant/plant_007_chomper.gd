@@ -78,7 +78,7 @@ func bite_end():
 			is_bite = true
 #endregion
 
-## 咬合关键帧重新按出怪权重选取有效目标；有目标时先结算伤害，随后与空咬共用死亡流程。
+## 咬合关键帧重新索敌；小、中体型直接移除，大体型与僵王结算伤害，随后与空咬共用自身死亡流程。
 func _eat_zombie():
 	if is_death or is_queued_for_deletion() or _bite_resolved:
 		return
@@ -90,10 +90,14 @@ func _eat_zombie():
 	if enemy is ZB000Base:
 		enemy.be_attacked_bullet(eat_attack, BulletRegistry.AttackMode.Penetration, false, false)
 	elif enemy is Zombie000Base:
-		# 小、中体型清空本体与防具；大体型沿用配置的 1800 穿透伤害。
-		var damage: int = enemy.hp_component.get_all_hp() \
-			if enemy.zombie_body_size in [Zombie000Base.BodySize.Small, Zombie000Base.BodySize.Medium] else eat_attack
-		enemy.be_chomper_eat(damage)
+		if enemy.zombie_body_size in [Zombie000Base.BodySize.Small, Zombie000Base.BodySize.Medium]:
+			# 直接清除而不扣血；死亡通知仍更新敌人数、普通成长和自然波次统计，关闭目标亡语。
+			enemy.is_can_death_language = false
+			enemy.character_death()
+			enemy.queue_free()
+		else:
+			# 大体型仍使用原本的 1800 基础穿透伤害及其共用受伤结算。
+			enemy.be_chomper_eat(eat_attack)
 	chew_timer.stop()
 	character_death()
 

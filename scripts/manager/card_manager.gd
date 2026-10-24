@@ -88,6 +88,7 @@ func init_manager() -> void:
 ## 开始下一轮游戏更新卡片管理器
 func start_next_game_card_manager_update():
 	card_slot_root.ui_shovel.visible = false
+	card_slot_root.ui_glove.set_toolbar_ready(false)
 	if is_seed_rain:
 		card_slot_seed_rain.pause_seed_rain()
 
@@ -111,6 +112,8 @@ func card_slot_appear_choose():
 
 ## 卡槽出现（主游戏阶段开始）
 func card_slot_update_main_game():
+	# 卡槽入场及重新挂载完成前，手套与铲子一样保持隐藏。
+	card_slot_root.ui_glove.set_toolbar_ready(false)
 	if is_seed_rain:
 		card_slot_seed_rain.start_seed_rain()
 
@@ -124,7 +127,7 @@ func card_slot_update_main_game():
 			card_slot_battle.main_game_refresh_card()
 			## 测试模式卡片没有冷却
 			if Global.main_game.is_test:
-				for card in card_slot_battle.curr_cards:
+				for card in card_slot_battle.get_all_cards():
 					card.card_change_cool_time(0)
 
 		ConstLevelData.E_CardMode.ConveyorBelt:
@@ -146,6 +149,8 @@ func card_slot_update_main_game():
 					card.card_change_cool_time(0)
 	if is_shovel:
 		card_slot_root.ui_shovel.visible = true
+	# 与铲子共用卡槽准备完成时机；是否开放铲子不影响原有手套可用范围。
+	card_slot_root.ui_glove.set_toolbar_ready(true)
 
 ## 待选卡槽卡槽消失
 func card_slot_disappear_choose():
@@ -182,7 +187,7 @@ func temp_card_add_exist_timer(temp_card: Card, temp_card_exist_time: float) -> 
 	temp_card.add_child(temp_card_timer)
 	temp_card_timer.start(temp_card_exist_time)
 
-## [param temp_card] 正常存在期结束后闪烁 5 秒；仍手持时等待该卡退出手持再销毁。
+## [param temp_card] 正常存在期结束后闪烁5秒；到期仍手持时等待取消或放置，不中断手持状态。
 func _on_temp_card_timer_timeout(temp_card: Card) -> void:
 	if not is_instance_valid(temp_card) or temp_card.is_queued_for_deletion():
 		return
@@ -190,7 +195,8 @@ func _on_temp_card_timer_timeout(temp_card: Card) -> void:
 	await get_tree().create_timer(5.0, false).timeout
 	if not is_instance_valid(temp_card) or temp_card.is_queued_for_deletion():
 		return
-	if curr_temp_card_in_hm == temp_card:
+	# 倒计时照常结束，但正在手持的卡不强制消失；其他卡的退出通知也不能提前释放它。
+	while is_instance_valid(temp_card) and not temp_card.is_queued_for_deletion() and curr_temp_card_in_hm == temp_card:
 		await signal_hm_character_clear_card
 	if is_instance_valid(temp_card):
 		card_use_end(temp_card)

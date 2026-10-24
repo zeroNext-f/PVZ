@@ -1,12 +1,11 @@
-[gd_scene load_steps=32 format=3 uid="uid://uqips7rvhgpg"]
+[gd_scene load_steps=31 format=3 uid="uid://uqips7rvhgpg"]
 
-[ext_resource type="PackedScene" uid="uid://c5cke4cm02um7" path="res://scenes/character/plant/plant_000_base.tscn" id="1_n3wco"]
+[ext_resource type="PackedScene" path="res://scenes/character/plant/plant_000_awake_base.tscn" id="1_n3wco"]
 [ext_resource type="Texture2D" uid="uid://3a0yexorxcsk" path="res://assets/reanim/IceShroom_body.png" id="2_37t62"]
 [ext_resource type="Script" uid="uid://b1v8yyvu0jo58" path="res://scripts/character/plant/plant_015_ice_shroom.gd" id="2_xarg1"]
 [ext_resource type="Texture2D" uid="uid://c213mmlt125el" path="res://assets/reanim/IceShroom_base.png" id="3_757qa"]
 [ext_resource type="Texture2D" uid="uid://dhb33lor5gb5w" path="res://assets/reanim/IceShroom_blink1.png" id="4_663tl"]
 [ext_resource type="Texture2D" uid="uid://cco82p2wd1ql4" path="res://assets/reanim/IceShroom_head.png" id="5_236rb"]
-[ext_resource type="Animation" uid="uid://bv1w6c5kxvxdu" path="res://animation/character/plant/015_ice_shroom/IceShroom_idle.tres" id="6_xarg1"]
 [ext_resource type="Animation" uid="uid://bg3t1o4lre152" path="res://animation/character/plant/015_ice_shroom/IceShroom_sleep.tres" id="7_qhmsm"]
 [ext_resource type="Script" uid="uid://jl0nl4a234bc" path="res://scripts/resources/resource_body_change.gd" id="7_wi4d4"]
 [ext_resource type="Script" uid="uid://jjkononfo1vm" path="res://scripts/character/components/bomb_component/component_bomb_ice.gd" id="8_37t62"]
@@ -23,7 +22,7 @@ metadata/_custom_type_script = "uid://jl0nl4a234bc"
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_euprm"]
 _data = {
-&"IceShroom_idle": ExtResource("6_xarg1"),
+&"IceShroom_idle": ExtResource("9_xarg1"),
 &"IceShroom_idle_only": ExtResource("9_xarg1"),
 &"IceShroom_sleep": ExtResource("7_qhmsm")
 }
@@ -109,8 +108,8 @@ scale_max = 3.0
 [node name="Plant015IceShroom" node_paths=PackedStringArray("node_no_change_direction") instance=ExtResource("1_n3wco")]
 script = ExtResource("2_xarg1")
 plant_type = 15
-is_sleep_in_day = true
-node_no_change_direction = [NodePath("HpComponent"), NodePath("SleepComponent"), null]
+is_sleep_in_day = false
+node_no_change_direction = [NodePath("HpComponent")]
 
 [node name="BodyCorrect" parent="Body" index="0"]
 position = Vector2(-41, -69)
@@ -143,9 +142,6 @@ position = Vector2(-1.4, 1.5)
 scale = Vector2(0.8, 0.8061121)
 texture = ExtResource("5_236rb")
 centered = false
-
-[node name="SleepComponent" parent="." index="4" node_paths=PackedStringArray("sleep_influence_components")]
-sleep_influence_components = [NodePath("../BlinkComponent"), NodePath("../BombComponent")]
 
 [node name="BlinkComponent" parent="." index="5"]
 all_blink_body_change = Array[ExtResource("7_wi4d4")]([SubResource("Resource_ohyhk")])

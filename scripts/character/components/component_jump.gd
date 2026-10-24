@@ -3,6 +3,8 @@ extends ComponentNormBase
 class_name JumpComponent
 
 @onready var owner_zombie: Zombie000Base = owner
+## 撑杆被魅惑后开启；仅排除植物触发、补偿和阻跳，不改变其他跳跃组件默认行为。
+var ignore_plant_targets: bool = false
 @onready var move_component: MoveComponent = %MoveComponent
 @onready var detect_component: DetectComponent = %DetectComponent
 
@@ -92,6 +94,8 @@ func jump_end():
 
 ## 跳跃被高坚果强行停止
 func jump_be_stop(plant:Plant000Base):
+	if ignore_plant_targets:
+		return
 	is_jump_stop = true
 	jump_stop_postion = plant.global_position
 
@@ -105,6 +109,9 @@ func judge_jump_be_stop():
 func _on_area_2d_area_entered(area: Area2D) -> void:
 	var enemy = area.owner
 	if enemy is Plant000Base:
+		# 排除延迟更新碰撞掩码前已排队的植物进入回调。
+		if ignore_plant_targets:
+			return
 		var enemy_plant:Plant000Base = enemy
 		## 如果当前植物可以被僵尸攻击到
 		if enemy_plant.curr_be_attack_status & can_attack_plant_status:

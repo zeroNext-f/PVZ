@@ -1,0 +1,190 @@
+[gd_resource type="Resource" script_class="ResourceLevelData" load_steps=36 format=3]
+
+[ext_resource type="Script" path="res://scripts/resources/level/level_data.gd" id="1_level"]
+[ext_resource type="Script" path="res://scripts/resources/card/card_reference.gd" id="2_card"]
+[ext_resource type="Script" path="res://scripts/resources/card/card_weight.gd" id="3_weight"]
+
+[sub_resource type="Resource" id="Card_1"]
+script = ExtResource("2_card")
+card_type = 1
+content_id = 1
+
+[sub_resource type="Resource" id="Weight_1"]
+script = ExtResource("3_weight")
+card_reference = SubResource("Card_1")
+weight = 0
+
+[sub_resource type="Resource" id="Card_2"]
+script = ExtResource("2_card")
+card_type = 1
+content_id = 2
+
+[sub_resource type="Resource" id="Weight_2"]
+script = ExtResource("3_weight")
+card_reference = SubResource("Card_2")
+weight = 0
+
+[sub_resource type="Resource" id="Card_3"]
+script = ExtResource("2_card")
+card_type = 1
+content_id = 3
+
+[sub_resource type="Resource" id="Weight_3"]
+script = ExtResource("3_weight")
+card_reference = SubResource("Card_3")
+weight = 0
+
+[sub_resource type="Resource" id="Card_4"]
+script = ExtResource("2_card")
+card_type = 1
+content_id = 4
+
+[sub_resource type="Resource" id="Weight_4"]
+script = ExtResource("3_weight")
+card_reference = SubResource("Card_4")
+weight = 0
+
+[sub_resource type="Resource" id="Card_5"]
+script = ExtResource("2_card")
+card_type = 1
+content_id = 5
+
+[sub_resource type="Resource" id="Weight_5"]
+script = ExtResource("3_weight")
+card_reference = SubResource("Card_5")
+weight = 0
+
+[sub_resource type="Resource" id="Card_6"]
+script = ExtResource("2_card")
+card_type = 1
+content_id = 6
+
+[sub_resource type="Resource" id="Weight_6"]
+script = ExtResource("3_weight")
+card_reference = SubResource("Card_6")
+weight = 0
+
+[sub_resource type="Resource" id="Card_7"]
+script = ExtResource("2_card")
+card_type = 1
+content_id = 7
+
+[sub_resource type="Resource" id="Weight_7"]
+script = ExtResource("3_weight")
+card_reference = SubResource("Card_7")
+weight = 0
+
+[sub_resource type="Resource" id="Card_8"]
+script = ExtResource("2_card")
+card_type = 1
+content_id = 8
+
+[sub_resource type="Resource" id="Weight_8"]
+script = ExtResource("3_weight")
+card_reference = SubResource("Card_8")
+weight = 0
+
+[sub_resource type="Resource" id="Card_9"]
+script = ExtResource("2_card")
+card_type = 1
+content_id = 9
+
+[sub_resource type="Resource" id="Weight_9"]
+script = ExtResource("3_weight")
+card_reference = SubResource("Card_9")
+weight = 0
+
+[sub_resource type="Resource" id="Card_10"]
+script = ExtResource("2_card")
+card_type = 1
+content_id = 10
+
+[sub_resource type="Resource" id="Weight_10"]
+script = ExtResource("3_weight")
+card_reference = SubResource("Card_10")
+weight = 0
+
+[sub_resource type="Resource" id="Card_11"]
+script = ExtResource("2_card")
+card_type = 1
+content_id = 11
+
+[sub_resource type="Resource" id="Weight_11"]
+script = ExtResource("3_weight")
+card_reference = SubResource("Card_11")
+weight = 10
+
+[sub_resource type="Resource" id="Card_12"]
+script = ExtResource("2_card")
+card_type = 1
+content_id = 12
+
+[sub_resource type="Resource" id="Weight_12"]
+script = ExtResource("3_weight")
+card_reference = SubResource("Card_12")
+weight = 10
+
+[sub_resource type="Resource" id="Card_13"]
+script = ExtResource("2_card")
+card_type = 1
+content_id = 13
+
+[sub_resource type="Resource" id="Weight_13"]
+script = ExtResource("3_weight")
+card_reference = SubResource("Card_13")
+weight = 5
+
+[sub_resource type="Resource" id="Card_14"]
+script = ExtResource("2_card")
+card_type = 1
+content_id = 14
+
+[sub_resource type="Resource" id="Weight_14"]
+script = ExtResource("3_weight")
+card_reference = SubResource("Card_14")
+weight = 40
+
+[sub_resource type="Resource" id="Card_15"]
+script = ExtResource("2_card")
+card_type = 1
+content_id = 15
+
+[sub_resource type="Resource" id="Weight_15"]
+script = ExtResource("3_weight")
+card_reference = SubResource("Card_15")
+weight = 30
+
+[sub_resource type="Resource" id="Card_16"]
+script = ExtResource("2_card")
+card_type = 1
+content_id = 16
+
+[sub_resource type="Resource" id="Weight_16"]
+script = ExtResource("3_weight")
+card_reference = SubResource("Card_16")
+weight = 5
+
+[resource]
+script = ExtResource("1_level")
+fixed_level_id = "night_09"
+game_round = 1
+game_BG = 1
+game_BGM = 1
+is_day = false
+is_day_sun = false
+is_have_tombston = true
+init_tombstone_num = 5
+big_wave_tombstone_num = 3
+look_show_zombie = true
+can_choosed_card = false
+zombie_multy = 6
+norm_health_per_other = 50
+max_wave = 30
+zombie_refresh_types = Array[int]([1, 3, 4, 5, 6, 7, 8, 9])
+card_mode = 2
+use_level_card_pool = true
+allowed_plant_types = Array[int]([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
+max_choosed_card_num = 10
+start_sun = 50
+conveyor_weights = Array[ExtResource("3_weight")]([SubResource("Weight_1"), SubResource("Weight_2"), SubResource("Weight_3"), SubResource("Weight_4"), SubResource("Weight_5"), SubResource("Weight_6"), SubResource("Weight_7"), SubResource("Weight_8"), SubResource("Weight_9"), SubResource("Weight_10"), SubResource("Weight_11"), SubResource("Weight_12"), SubResource("Weight_13"), SubResource("Weight_14"), SubResource("Weight_15"), SubResource("Weight_16")])
+create_new_card_speed = 0.8333333333333333

@@ -42,6 +42,9 @@ func balloon_pop_end():
 
 ## 被三叶草吹走
 func be_blow_away():
+	# 已被橄榄球顶飞的气球先取消独立轨迹，避免两个补间争抢横坐标。
+	finish_football_launch()
+	_football_blowing_away = true
 	move_component.update_move_factor(true, MoveComponent.E_MoveFactor.IsBlover)
 
 	var tween:Tween = create_tween()
