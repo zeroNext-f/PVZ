@@ -15,6 +15,8 @@ class_name ResourceSaveGameMainGame
 @export_group("天降阳光数据")
 ## 天降阳光已生产阳光数量
 @export var day_sun_curr_sun_sum_value :int = 0
+## 本局累计新种双子向日葵的天降减时次数；旧存档缺字段时默认0。
+@export var day_sun_twin_sunflower_plantings: int = 0
 
 @export_group("卡槽数据")
 @export var card_manager_data :Dictionary = {}

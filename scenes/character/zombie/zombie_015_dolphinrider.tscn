@@ -56,8 +56,11 @@
 [ext_resource type="Texture2D" uid="uid://yj0oi6qioc7a" path="res://assets/reanim/Zombie_charred_pile1.png" id="41_akxbv"]
 [ext_resource type="Texture2D" uid="uid://dnpuhr7ji0g6r" path="res://assets/reanim/Zombie_charred_eyes1.png" id="42_vqjqv"]
 [ext_resource type="Texture2D" uid="uid://crm1gvhyudrtn" path="res://assets/reanim/Zombie_charred_eyes2.png" id="43_tl6lc"]
-[ext_resource type="Script" uid="uid://chytggkejgi5p" path="res://scripts/character/components/swim_box_component/component_swim_box_snorkle.gd" id="44_gwu51"]
+[ext_resource type="Script" path="res://scripts/character/components/swim_box_component/component_swim_box_dolphin.gd" id="44_gwu51"]
 
+[ext_resource type="Animation" path="res://animation/character/zombie/015_zombie_dolphinrider/Zombie_dolphinrider_underwater.tres" id="45_underwater"]
+[ext_resource type="Animation" path="res://animation/character/zombie/015_zombie_dolphinrider/Zombie_dolphinrider_surface.tres" id="46_surface"]
+[ext_resource type="Texture2D" path="res://assets/image/zombie/dolphin_underwater_fin_v1.png" id="47_fin"]
 [sub_resource type="Resource" id="Resource_c6ldt"]
 script = ExtResource("25_jrf5p")
 sprite_change = Array[NodePath]([NodePath("../Body/BodyCorrect/Zombie_dolphinrider_outerarm_upper")])
@@ -1107,6 +1110,8 @@ _data = {
 &"Zombie_dolphinrider_idle": ExtResource("28_7gq2p"),
 &"Zombie_dolphinrider_jumpinpool": ExtResource("29_kxtwp"),
 &"Zombie_dolphinrider_ride": ExtResource("30_ava8h"),
+&"Zombie_dolphinrider_underwater": ExtResource("45_underwater"),
+&"Zombie_dolphinrider_surface": ExtResource("46_surface"),
 &"Zombie_dolphinrider_swim": ExtResource("31_qp4mm"),
 &"Zombie_dolphinrider_walk": ExtResource("32_p22np"),
 &"Zombie_dolphinrider_walkdolphin": ExtResource("33_df8d0")
@@ -1154,6 +1159,7 @@ advance_expression = "is_swimming"
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_08gle"]
 switch_mode = 2
 advance_mode = 2
+advance_expression = "not _will_dive"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_hjt17"]
 advance_mode = 2
@@ -1199,8 +1205,38 @@ advance_expression = "not is_swimming"
 advance_mode = 2
 advance_expression = "not is_swimming"
 
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_underwater"]
+animation = &"Zombie_dolphinrider_underwater"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_surface"]
+animation = &"Zombie_dolphinrider_surface"
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="Transition_enter_underwater"]
+switch_mode = 2
+advance_mode = 2
+advance_expression = "_will_dive"
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="Transition_surface_request"]
+advance_mode = 2
+advance_expression = "is_surfacing"
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="Transition_surface_end"]
+switch_mode = 2
+advance_mode = 2
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="Transition_underwater_leave_pool"]
+advance_mode = 2
+advance_expression = "not is_swimming"
+[sub_resource type="AnimationNodeStateMachineTransition" id="Transition_return_to_swim"]
+advance_mode = 2
+advance_expression = "is_swimming and not is_ride and not is_death"
+
 [sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_ydrci"]
 states/Start/position = Vector2(146, 114)
+states/Zombie_dolphinrider_underwater/node = SubResource("AnimationNodeAnimation_underwater")
+states/Zombie_dolphinrider_underwater/position = Vector2(905, 212)
+states/Zombie_dolphinrider_surface/node = SubResource("AnimationNodeAnimation_surface")
+states/Zombie_dolphinrider_surface/position = Vector2(905, 282)
 states/Zombie_dolphinrider_death/node = SubResource("AnimationNodeAnimation_ofqwu")
 states/Zombie_dolphinrider_death/position = Vector2(848, 575)
 states/Zombie_dolphinrider_dolphinjump/node = SubResource("AnimationNodeAnimation_yl8if")
@@ -1219,7 +1255,7 @@ states/Zombie_dolphinrider_walk/node = SubResource("AnimationNodeAnimation_wm8bi
 states/Zombie_dolphinrider_walk/position = Vector2(386, 434)
 states/Zombie_dolphinrider_walkdolphin/node = SubResource("AnimationNodeAnimation_iwwki")
 states/Zombie_dolphinrider_walkdolphin/position = Vector2(344, 212)
-transitions = ["Start", "Zombie_dolphinrider_idle", SubResource("AnimationNodeStateMachineTransition_a1ed3"), "Zombie_dolphinrider_idle", "Zombie_dolphinrider_walkdolphin", SubResource("AnimationNodeStateMachineTransition_0u6g7"), "Zombie_dolphinrider_walkdolphin", "Zombie_dolphinrider_jumpinpool", SubResource("AnimationNodeStateMachineTransition_lrg8e"), "Zombie_dolphinrider_jumpinpool", "Zombie_dolphinrider_ride", SubResource("AnimationNodeStateMachineTransition_08gle"), "Zombie_dolphinrider_ride", "Zombie_dolphinrider_dolphinjump", SubResource("AnimationNodeStateMachineTransition_hjt17"), "Zombie_dolphinrider_dolphinjump", "Zombie_dolphinrider_swim", SubResource("AnimationNodeStateMachineTransition_cu1bl"), "Zombie_dolphinrider_swim", "Zombie_dolphinrider_eat", SubResource("AnimationNodeStateMachineTransition_pn8q5"), "Zombie_dolphinrider_eat", "Zombie_dolphinrider_death", SubResource("AnimationNodeStateMachineTransition_pa3ew"), "Zombie_dolphinrider_swim", "Zombie_dolphinrider_death", SubResource("AnimationNodeStateMachineTransition_y7qvo"), "Zombie_dolphinrider_swim", "Zombie_dolphinrider_walk", SubResource("AnimationNodeStateMachineTransition_ftjjv"), "Zombie_dolphinrider_walk", "Zombie_dolphinrider_death", SubResource("AnimationNodeStateMachineTransition_s4dol"), "Start", "Zombie_dolphinrider_walkdolphin", SubResource("AnimationNodeStateMachineTransition_38nik"), "Zombie_dolphinrider_eat", "Zombie_dolphinrider_swim", SubResource("AnimationNodeStateMachineTransition_xujkh"), "Zombie_dolphinrider_dolphinjump", "Zombie_dolphinrider_walk", SubResource("AnimationNodeStateMachineTransition_t72tt"), "Zombie_dolphinrider_ride", "Zombie_dolphinrider_walk", SubResource("AnimationNodeStateMachineTransition_gwu51")]
+transitions = ["Zombie_dolphinrider_walk", "Zombie_dolphinrider_swim", SubResource("Transition_return_to_swim"), "Zombie_dolphinrider_jumpinpool", "Zombie_dolphinrider_underwater", SubResource("Transition_enter_underwater"), "Zombie_dolphinrider_underwater", "Zombie_dolphinrider_surface", SubResource("Transition_surface_request"), "Zombie_dolphinrider_surface", "Zombie_dolphinrider_ride", SubResource("Transition_surface_end"), "Zombie_dolphinrider_underwater", "Zombie_dolphinrider_walk", SubResource("Transition_underwater_leave_pool"), "Zombie_dolphinrider_surface", "Zombie_dolphinrider_walk", SubResource("Transition_underwater_leave_pool"), "Start", "Zombie_dolphinrider_idle", SubResource("AnimationNodeStateMachineTransition_a1ed3"), "Zombie_dolphinrider_idle", "Zombie_dolphinrider_walkdolphin", SubResource("AnimationNodeStateMachineTransition_0u6g7"), "Zombie_dolphinrider_walkdolphin", "Zombie_dolphinrider_jumpinpool", SubResource("AnimationNodeStateMachineTransition_lrg8e"), "Zombie_dolphinrider_jumpinpool", "Zombie_dolphinrider_ride", SubResource("AnimationNodeStateMachineTransition_08gle"), "Zombie_dolphinrider_ride", "Zombie_dolphinrider_dolphinjump", SubResource("AnimationNodeStateMachineTransition_hjt17"), "Zombie_dolphinrider_dolphinjump", "Zombie_dolphinrider_swim", SubResource("AnimationNodeStateMachineTransition_cu1bl"), "Zombie_dolphinrider_swim", "Zombie_dolphinrider_eat", SubResource("AnimationNodeStateMachineTransition_pn8q5"), "Zombie_dolphinrider_eat", "Zombie_dolphinrider_death", SubResource("AnimationNodeStateMachineTransition_pa3ew"), "Zombie_dolphinrider_swim", "Zombie_dolphinrider_death", SubResource("AnimationNodeStateMachineTransition_y7qvo"), "Zombie_dolphinrider_swim", "Zombie_dolphinrider_walk", SubResource("AnimationNodeStateMachineTransition_ftjjv"), "Zombie_dolphinrider_walk", "Zombie_dolphinrider_death", SubResource("AnimationNodeStateMachineTransition_s4dol"), "Start", "Zombie_dolphinrider_walkdolphin", SubResource("AnimationNodeStateMachineTransition_38nik"), "Zombie_dolphinrider_eat", "Zombie_dolphinrider_swim", SubResource("AnimationNodeStateMachineTransition_xujkh"), "Zombie_dolphinrider_dolphinjump", "Zombie_dolphinrider_walk", SubResource("AnimationNodeStateMachineTransition_t72tt"), "Zombie_dolphinrider_ride", "Zombie_dolphinrider_walk", SubResource("AnimationNodeStateMachineTransition_gwu51")]
 graph_offset = Vector2(-18, 148)
 
 [sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_6bvct"]
@@ -1236,6 +1272,7 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"
 script = ExtResource("2_g80ia")
 is_jumping = false
 zombie_type = 15
+zombie_body_size = 1
 is_trigger_squash_pos_judge = true
 is_trigger_tall_nut_stop_jump = true
 sfx_enter_name = &"dolphin_appears"
@@ -1436,6 +1473,12 @@ scale = Vector2(0.799, 0.799)
 texture = ExtResource("24_tf0ce")
 centered = false
 
+[node name="UnderwaterFin" type="Sprite2D" parent="Body" index="2"]
+visible = false
+position = Vector2(-62, -8)
+scale = Vector2(0.554375, 0.554375)
+texture = ExtResource("47_fin")
+flip_h = true
 [node name="Node2D_Hand_Drop" type="Node2D" parent="Body/NodeDrop" index="0" unique_id=101080444]
 script = ExtResource("29_04h06")
 
@@ -1475,6 +1518,9 @@ rotation = 0.456209
 scale = Vector2(0.796015, 0.796015)
 texture = ExtResource("16_hf77w")
 centered = false
+
+[node name="HpComponent" parent="." index="4"]
+max_hp = 720
 
 [node name="HpStageChangeComponent" parent="." index="3"]
 body_change = Array[ExtResource("25_jrf5p")]([SubResource("Resource_c6ldt"), SubResource("Resource_pfdwe")])

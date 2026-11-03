@@ -1,6 +1,45 @@
 extends Character000Base
 class_name Zombie000Base
 
+## 正在被高坚果反碾压推退，用于同次接触去重，不属于可免疫的异常状态。
+var tall_nut_repulse_active: bool = false
+## 绑定僵尸生命周期的水平推退补间；死亡时主动终止。
+var _tall_nut_repulse_tween: Tween
+
+## [param distance] 按实际格距计算的后退像素数；大体型/全异常免疫僵尸同样可被物理推退。
+func start_tall_nut_repulse(distance: float) -> bool:
+	if is_death or hp_component.is_death or is_queued_for_deletion() or tall_nut_repulse_active:
+		return false
+	tall_nut_repulse_active = true
+	move_component.update_move_factor(true, MoveComponent.E_MoveFactor.TallNutRepulse)
+	_tall_nut_repulse_tween = create_tween().set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
+	_tall_nut_repulse_tween.tween_method(_apply_tall_nut_repulse_x, global_position.x,
+		global_position.x + distance * direction_x_root, 0.3).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_tall_nut_repulse_tween.tween_callback(_finish_tall_nut_repulse)
+	return true
+
+## [param new_x] 当前推退横坐标；屋顶按世界位置同步坡面高度，不改变受击分类或异常状态。
+func _apply_tall_nut_repulse_x(new_x: float) -> void:
+	if is_death:
+		return
+	# 推退前横坐标，用于坡面高度差。
+	var old_x: float = global_position.x
+	global_position.x = new_x
+	if is_instance_valid(Global.main_game) and is_instance_valid(Global.main_game.main_game_slope):
+		move_y_zombie(Global.main_game.main_game_slope.get_all_slope_y(new_x)
+			- Global.main_game.main_game_slope.get_all_slope_y(old_x))
+
+## 推退完成或死亡时清理自己的位移锁，不覆盖其他移动禁用原因。
+func _finish_tall_nut_repulse() -> void:
+	if not tall_nut_repulse_active:
+		return
+	if is_instance_valid(_tall_nut_repulse_tween):
+		_tall_nut_repulse_tween.kill()
+	tall_nut_repulse_active = false
+	if not is_death and not hp_component.is_death:
+		move_component.update_move_factor(false, MoveComponent.E_MoveFactor.TallNutRepulse)
+		move_component.update_previous_ground_global_x()
+
 
 @onready var attack_component: AttackComponentBase = %AttackComponent
 @onready var hp_stage_change_component: HpStageChangeComponent = %HpStageChangeComponent
@@ -11,12 +50,20 @@ class_name Zombie000Base
 ## 灰烬表现已开始，供大嘴花等目标筛选排除正在化灰的僵尸，不随动画节点重挂而丢失。
 var is_charred:bool = false
 ## 是否已受剧毒影响；首次施加后持续至死亡，重复施加不刷新、不叠加。
-var is_poisoned:bool = false
-## 烧灼状态空占位：供大喷菇识别与共享，不附加伤害、计时或音画效果。
-var has_burning_placeholder:bool = false
-## 是否正在被橄榄球顶飞；受击分类暂为气球同款IsSky，独立于原本阵营。
+var is_poisoned:bool = false:
+	set(value):
+		if value and not can_receive_abnormal_status():
+			return
+		is_poisoned = value
+## 是否正在被橄榄球或地刺击飞；受击分类为气球同款IsSky，独立于原本阵营。
 var football_launch_active:bool = false
-## 顶飞前或期间其他机制请求的受击状态，落地后恢复。
+## 橄榄球轨迹落地后的空中判定尾段，只保留IsSky，不延长移动、攻击或动画锁。
+var _football_airborne_tail_active: bool = false
+## 当前顶飞轨迹结束后需要补足的空中判定时间，单位为游戏秒。
+var _football_airborne_tail_seconds: float = 0.0
+## 独立的空中判定尾段补间，重复顶飞、死亡或吹走时取消。
+var _football_airborne_tail_tween: Tween
+## 顶飞前或空中判定期间其他机制请求的受击状态，完整空中判定结束后恢复。
 var _football_restore_status:E_BeAttackStatusZombie = E_BeAttackStatusZombie.IsNorm
 ## 顶飞轨迹或被三叶草吹走的补间，重复顶飞时取消旧轨迹。
 var _football_launch_tween:Tween
@@ -28,6 +75,8 @@ var _football_launch_end_x:float = 0.0
 var _football_launch_height:float = 0.0
 ## 重启顶飞时继承的原抬升高度。
 var _football_launch_start_height:float = 0.0
+## 当前受控抛物线的峰高；橄榄球默认18像素，地刺竖直击飞使用50像素。
+var _football_launch_peak_height:float = 18.0
 ## 顶飞期间暂停的跳跃补偿组件及其原始处理开关。
 var _football_jump_component:Node
 ## 跳跃补偿组件原来的_process启用状态。
@@ -52,6 +101,22 @@ enum BodySize {
 
 ## 当前僵尸的机制体型，默认小；后续角色可在继承场景中配置中或大，不随小僵尸模式缩放改变。
 @export var zombie_body_size: BodySize = BodySize.Small
+## 全异常状态免疫，仅雪橇车和雪橇小队场景开启；不影响本体伤害及自身移动/下车流程。
+@export var immune_to_abnormal_status:bool = false
+
+## 返回是否允许赋予异常；供直接入口、状态字段及大喷菇扩散统一查询。
+func can_receive_abnormal_status() -> bool:
+	return not immune_to_abnormal_status
+
+## 返回是否允许赋予魅惑；大体型统一免疫，供收编、悬停提示、大喷菇扩散及角色专属入口共用。
+func can_be_hypnotized() -> bool:
+	return can_receive_abnormal_status() and zombie_body_size != BodySize.Large
+
+## 共用魅惑入口；大体型不改变阵营、朝向或发出魅惑信号。
+func be_hypno():
+	if not can_be_hypnotized():
+		return
+	super()
 
 ## 是否忽略梯子,即可以攻击梯子下的植物
 @export var is_ignore_ladder:=false
@@ -85,7 +150,7 @@ var participates_natural_refresh: bool = true
 ## 僵尸当前状态
 var curr_be_attack_status:E_BeAttackStatusZombie=E_BeAttackStatusZombie.IsNorm:
 	set(value):
-		if football_launch_active and value != E_BeAttackStatusZombie.IsSky:
+		if (football_launch_active or _football_airborne_tail_active) and value != E_BeAttackStatusZombie.IsSky:
 			_football_restore_status = value
 			curr_be_attack_status = E_BeAttackStatusZombie.IsSky
 		else:
@@ -402,6 +467,7 @@ func change_is_swimming(value:bool):
 func character_death():
 	# 先标记逻辑死亡，防具移除回调不能再触发气球落地等存活状态行为。
 	is_death = true
+	_finish_tall_nut_repulse()
 	finish_football_launch()
 	if is_instance_valid(all_timer[E_TimerType.Poison]):
 		all_timer[E_TimerType.Poison].stop()
@@ -445,7 +511,7 @@ func character_death_disappear():
 ## 施加独立剧毒状态；仅正常出战且存活的僵尸可接受，与其他异常状态共存。[br]
 ## 返回是否首次施加成功；重复施加直接返回false，不改变计时进度。
 func be_poisoned() -> bool:
-	if is_poisoned or is_death or hp_component.is_death or is_queued_for_deletion() \
+	if not can_receive_abnormal_status() or is_poisoned or is_death or hp_component.is_death or is_queued_for_deletion() \
 		or character_init_type != E_CharacterInitType.IsNorm:
 		return false
 	is_poisoned = true
@@ -462,7 +528,7 @@ func be_poisoned() -> bool:
 
 ## 首次中毒一秒后开始结算；每次按当前本体最大生命的2%四舍五入，最低1点。
 func _on_poison_timer_timeout() -> void:
-	if not is_poisoned or is_death or hp_component.is_death or is_queued_for_deletion():
+	if not can_receive_abnormal_status() or not is_poisoned or is_death or hp_component.is_death or is_queued_for_deletion():
 		all_timer[E_TimerType.Poison].stop()
 		return
 	settle_poison_damage_once()
@@ -471,7 +537,7 @@ func _on_poison_timer_timeout() -> void:
 ## 对仍存活且已中毒的正常出战僵尸结算一次现有剧毒，不新建、停止或重启原跳伤计时器。
 ## 定时跳伤与胆小菇轮末追加跳伤共用本入口，保留防具绕过、寒冰不增伤及读报抗性。
 func settle_poison_damage_once() -> void:
-	if not is_poisoned or is_death or hp_component.is_death or is_queued_for_deletion() \
+	if not can_receive_abnormal_status() or not is_poisoned or is_death or hp_component.is_death or is_queued_for_deletion() \
 		or character_init_type != E_CharacterInitType.IsNorm:
 		return
 	# 专用本体扣血入口，不消耗防具、不触发寒冰增伤或普通受击加速机制。
@@ -549,6 +615,8 @@ func be_grap_in_pool():
 ## 灰烬动画从角色本体摘出来,本体节点free,灰烬动画播放玩后删除
 ## is_cherry_bomb:bool = false ：是否灰烬炸弹(非土豆雷)
 func be_bomb(attack_value:int, is_cherry_bomb:bool = false):
+	# 灰烬标记而非穿透模式决定是否触发已烧灼目标的后方连锁。
+	var burning_hit:Dictionary = BurningState.capture_hit(self) if is_cherry_bomb else {}
 	is_can_death_language = false
 	hp_component.Hp_loss(attack_value,BulletRegistry.AttackMode.Penetration, false, false)
 	## 如果角色死亡
@@ -559,6 +627,7 @@ func be_bomb(attack_value:int, is_cherry_bomb:bool = false):
 		queue_free()
 	#await get_tree().process_frame
 	set_deferred("is_can_death_language", true)
+	BurningState.finish_hit(burning_hit)
 
 ## 被大嘴花吃
 func be_chomper_eat(attack_value:int):
@@ -597,7 +666,7 @@ func loss_iron_item():
 
 ## 被吹走,在空中的僵尸被三叶草吹时调用
 func be_blow_away():
-	if not football_launch_active or is_death:
+	if not (football_launch_active or _football_airborne_tail_active) or is_death:
 		return
 	finish_football_launch()
 	_football_blowing_away = true
@@ -632,6 +701,8 @@ func jump_be_stop(_plant:Plant000Base):
 ## 黄油糊脸
 ##[butter_time:float]:黄油糊脸时间
 func be_butter(butter_time:float=4):
+	if not can_receive_abnormal_status():
+		return
 	if not is_death:
 		## 黄油节点
 		if not is_instance_valid(butter_splat):
@@ -661,6 +732,8 @@ func _on_butter_timer_timeout() -> void:
 
 #region 僵尸吃大蒜换行
 func update_lane_on_eat_garlic():
+	if not can_receive_abnormal_status():
+		return
 	SoundManager.play_character_SFX("yuck")
 	update_speed_factor(0.0, E_Influence_Speed_Factor.EatGarlic)
 	await get_tree().create_timer(0.5, false).timeout
@@ -715,35 +788,51 @@ func update_mini_zombie():
 
 
 ## [param displacement] 沿世界x移动的距离；0.75秒内走低抛物线，不改变生命、阵营和行号。
-## 正常出战且存活才可顶飞；重复顶飞续接当前高度，返回是否成功开始。
-func start_football_launch(displacement:float) -> bool:
-	if character_init_type != E_CharacterInitType.IsNorm or is_death or hp_component.is_death \
+## [param duration] 游戏秒，橄榄球默认0.75；[param peak_height] 本次抛物线峰高，默认18像素。
+## 正常出战且存活才可顶飞，返回是否成功。[br]
+## [param displacement] 横向位移；[param duration] 轨迹游戏秒数；[param peak_height] 抛物线峰高像素；
+## [param airborne_duration] 从启动算起的空中判定游戏秒数，至少覆盖整段轨迹；重复顶飞重新计时。
+func start_football_launch(displacement:float, duration:float = 0.75, peak_height:float = 18.0, airborne_duration:float = 1.0) -> bool:
+	if not can_receive_abnormal_status() or zombie_body_size == BodySize.Large or character_init_type != E_CharacterInitType.IsNorm or is_death or hp_component.is_death \
 		or is_queued_for_deletion() or _football_blowing_away:
 		return false
 	if is_instance_valid(_football_launch_tween):
 		_football_launch_tween.kill()
+	if is_instance_valid(_football_airborne_tail_tween):
+		_football_airborne_tail_tween.kill()
 	if not football_launch_active:
-		_football_restore_status = curr_be_attack_status
+		if not _football_airborne_tail_active:
+			_football_restore_status = curr_be_attack_status
 		football_launch_active = true
 		_football_jump_component = get_node_or_null("JumpComponent")
 		if is_instance_valid(_football_jump_component):
 			_football_jump_was_processing = _football_jump_component.is_processing()
 			_football_jump_component.set_process(false)
+	_football_airborne_tail_active = false
+	_football_airborne_tail_seconds = maxf(airborne_duration - duration, 0.0)
 	_football_launch_start_x = global_position.x
 	_football_launch_end_x = global_position.x + displacement
 	_football_launch_start_height = _football_launch_height
+	_football_launch_peak_height = peak_height
 	curr_be_attack_status = E_BeAttackStatusZombie.IsSky
 	attack_component.disable_component(ComponentNormBase.E_IsEnableFactor.FootballLaunch)
 	move_component.update_move_factor(true, MoveComponent.E_MoveFactor.FootballLaunch)
 	update_speed_factor(0.0, E_Influence_Speed_Factor.FootballLaunch)
 	_football_launch_tween = create_tween()
 	_football_launch_tween.set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
-	_football_launch_tween.tween_method(_advance_football_launch, 0.0, 1.0, 0.75)
-	_football_launch_tween.tween_callback(finish_football_launch)
+	_football_launch_tween.tween_method(_advance_football_launch, 0.0, 1.0, duration)
+	_football_launch_tween.tween_callback(finish_football_launch.bind(true))
 	return true
 
 
-## [param progress] 0～1的游戏时间进度；18像素峰高对应三格距离的低弧线。
+## 地刺种下时的竖直击飞：仅敌方小/中体型，控制与空中判定均为2游戏秒、50像素峰高，无横向位移与额外伤害。
+## 复用现有空中状态锁、影子贴地、暂停移动/攻击与落地恢复，不修改橄榄球默认顶飞参数。
+func start_caltrop_lift() -> bool:
+	if is_hypno or zombie_body_size not in [BodySize.Small, BodySize.Medium]:
+		return false
+	return start_football_launch(0.0, 2.0, 50.0, 2.0)
+
+## [param progress] 0～1的游戏时间进度；峰高由本次调用配置，橄榄球低弧线与地刺竖直上抛共用。
 func _advance_football_launch(progress:float) -> void:
 	if not football_launch_active or is_death or is_queued_for_deletion():
 		return
@@ -752,7 +841,7 @@ func _advance_football_launch(progress:float) -> void:
 	var new_x:float = lerpf(_football_launch_start_x, _football_launch_end_x, progress)
 	# 原地面基准可被换行等外部机制移动，逐次抵消已有抬升而不锁死y坐标。
 	var ground_y:float = global_position.y + _football_launch_height
-	var height:float = lerpf(_football_launch_start_height, 0.0, progress) + 72.0 * progress * (1.0 - progress)
+	var height:float = lerpf(_football_launch_start_height, 0.0, progress) + 4.0 * _football_launch_peak_height * progress * (1.0 - progress)
 	# 以世界高度保持影子贴地，兼容迷你模式的根节点缩放。
 	var shadow_ground_y:float = shadow.global_position.y if is_instance_valid(shadow) else 0.0
 	global_position = Vector2(new_x, ground_y - height)
@@ -765,12 +854,20 @@ func _advance_football_launch(progress:float) -> void:
 		move_y_zombie(slope.get_all_slope_y(new_x) - slope.get_all_slope_y(old_x))
 
 
-## 落地或死亡时清理自己的移动、攻击和速度因素；其他异常、气球和跳跃状态仍保留。
-func finish_football_launch() -> void:
+## [param preserve_airborne_tail] 仅正常落地传true，释放动作锁后补足空中判定；死亡/吹走立即清理。
+func finish_football_launch(preserve_airborne_tail: bool = false) -> void:
 	if not football_launch_active:
+		_clear_football_airborne_tail()
 		return
 	if is_instance_valid(_football_launch_tween):
 		_football_launch_tween.kill()
+	if preserve_airborne_tail and _football_airborne_tail_seconds > 0.0 and not is_death and not hp_component.is_death:
+		_football_airborne_tail_active = true
+		_football_airborne_tail_tween = create_tween()
+		_football_airborne_tail_tween.tween_interval(_football_airborne_tail_seconds)
+		_football_airborne_tail_tween.tween_callback(_clear_football_airborne_tail)
+	else:
+		_clear_football_airborne_tail()
 	football_launch_active = false
 	# 根节点落地不应让原本贴地的影子再下沉一次。
 	var shadow_ground_y:float = shadow.global_position.y if is_instance_valid(shadow) else 0.0
@@ -790,10 +887,21 @@ func finish_football_launch() -> void:
 			_football_jump_component.set_process(_football_jump_was_processing)
 
 
+## 清除落地后的空中判定；只在该尾段确实启用且没有新轨迹时恢复受击状态。
+func _clear_football_airborne_tail() -> void:
+	# 保存清理前状态，普通非顶飞死亡不能被此函数覆盖为旧受击状态。
+	var was_active: bool = _football_airborne_tail_active
+	if is_instance_valid(_football_airborne_tail_tween):
+		_football_airborne_tail_tween.kill()
+	_football_airborne_tail_active = false
+	if was_active and not football_launch_active:
+		curr_be_attack_status = _football_restore_status
+
+
 ## [param time] 冻结时间；[param new_time_ice_end_decelerate] 其后减速时间。[br]
-## 顶飞期间与气球共用语义：寒冰菇式冻结转成两段时长相加的减速，不追加冻结伤害。
+## 顶飞及落地后的空中判定期间与气球共用语义：寒冰菇式冻结转成两段时长相加的减速，不追加冻结伤害。
 func be_ice_freeze(time:float, new_time_ice_end_decelerate:float) -> void:
-	if football_launch_active:
+	if football_launch_active or _football_airborne_tail_active:
 		be_ice_decelerate(time + new_time_ice_end_decelerate)
 	else:
 		super(time, new_time_ice_end_decelerate)

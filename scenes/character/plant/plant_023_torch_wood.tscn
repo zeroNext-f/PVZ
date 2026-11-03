@@ -106,6 +106,9 @@ scale = Vector2(0.737, 0.787)
 texture = ExtResource("6_lpob7")
 centered = false
 
+[node name="HpComponent" parent="." index="3"]
+max_hp = 900
+
 [node name="BlinkComponent" parent="." index="5"]
 all_blink_body_change = Array[ExtResource("8_lpob7")]([SubResource("Resource_7d34a")])
 

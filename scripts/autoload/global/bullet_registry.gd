@@ -29,6 +29,12 @@ enum BulletType{
 	Bullet017SuperPea = 17,
 	## 破甲豌豆独立编号 18；原弹命中后上下 45 度各分裂两颗，跳过一类防具，二类防具承伤并阻止分裂。
 	Bullet018ArmorPiercingPea = 18,
+	## 火焰破甲豌豆：原弹40伤害，四颗分裂弹20伤害且仅保留火焰视觉；均跳过一类防具。
+	Bullet019FireArmorPiercingPea = 19,
+	## 火焰超能豌豆：80直接伤害，其他行为继承火焰豌豆。
+	Bullet020FireSuperPea = 20,
+	Bullet021TrackingPea = 21,	## 固定40伤害的追踪豌豆。
+	Bullet022FireTrackingPea = 22,	## 固定80伤害的火焰追踪豌豆。
 
 
 	Bullet1001Bowling = 1001,		## 保龄球
@@ -74,6 +80,10 @@ enum AttackMode {
 	BulletType.Bullet016CobCannon :preload("res://scenes/bullet/bullet_016_cob_cannon.tscn"),
 	BulletType.Bullet017SuperPea: preload("res://scenes/bullet/bullet_017_super_pea.tscn"),
 	BulletType.Bullet018ArmorPiercingPea: preload("res://scenes/bullet/bullet_018_armor_piercing_pea.tscn"),
+	BulletType.Bullet019FireArmorPiercingPea: preload("res://scenes/bullet/bullet_019_fire_armor_piercing_pea.tscn"),
+	BulletType.Bullet020FireSuperPea: preload("res://scenes/bullet/bullet_020_fire_super_pea.tscn"),
+	BulletType.Bullet021TrackingPea: preload("res://scenes/bullet/bullet_021_tracking_pea.tscn"),
+	BulletType.Bullet022FireTrackingPea: preload("res://scenes/bullet/bullet_022_fire_tracking_pea.tscn"),
 }
 
 ## 获取子弹场景方法

@@ -6,6 +6,8 @@ class_name Bullet018ArmorPiercingPea
 const SPLIT_BURST_SCRIPT:Script = preload("res://scripts/bullet/component/armor_pea_split_burst.gd")
 ## 原弹允许分裂；生成的四颗子弹在入树前设为 false，确保一轮两原弹最多共十颗。
 @export var can_split:bool = true
+## 分裂弹场景类型，普通破甲默认18，火焰变体配置为19；只改变外观/属性来源，不改变分裂规则。
+@export var split_bullet_type:BulletRegistry.BulletType = BulletRegistry.BulletType.Bullet018ArmorPiercingPea
 ## 分裂弹跳过触发分裂的原目标，防止出生在其受击框内立刻重复命中。
 var ignored_target_id:int = 0
 ## 一颗子弹只允许一次命中结算，防止目标多个受击框重复生成分裂。
@@ -59,6 +61,7 @@ func _queue_split(enemy:Character000Base) -> void:
 	burst.set("shot_parameters", get_bullet_paras())
 	burst.set("shot_camp", bullet_camp)
 	burst.set("ignored_target_id", enemy.get_instance_id())
+	burst.set("split_bullet_type", split_bullet_type)
 	bullet_parent.call_deferred("add_child", burst)
 
 

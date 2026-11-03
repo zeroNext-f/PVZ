@@ -656,6 +656,7 @@ func save_game_main_game():
 		save_game_data_main_game.curr_wave = save_game_data_main_game.curr_max_wave - 1
 	## 天降阳光
 	save_game_data_main_game.day_sun_curr_sun_sum_value = day_suns_manager.curr_sun_sum_value
+	save_game_data_main_game.day_sun_twin_sunflower_plantings = day_suns_manager.twin_sunflower_plantings
 	## 植物卡槽数据
 	save_game_data_main_game.card_manager_data = card_manager.get_save_game_data_card_manager()
 	## 小推车数据
@@ -695,6 +696,7 @@ func load_game_main_game():
 			plant_cell_manager.load_game_data_plant_cell_manager(save_game_data_main_game.plant_cell_manager_data)
 		## 天降阳光
 		day_suns_manager.curr_sun_sum_value = save_game_data_main_game.day_sun_curr_sun_sum_value
+		day_suns_manager.twin_sunflower_plantings = maxi(save_game_data_main_game.day_sun_twin_sunflower_plantings, 0)
 		## 植物卡槽数据
 		card_manager.load_game_data_card_manager(save_game_data_main_game.card_manager_data)
 		# 选卡和准备阶段只缓存僵王数据，正式进入 MAIN_GAME 后再恢复角色实例。

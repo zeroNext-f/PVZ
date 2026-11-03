@@ -80,7 +80,7 @@ func _bomb_all_enemy():
 		elif character is Zombie000Base:
 			character.be_bomb(bomb_value, is_cherry_bomb)
 		elif character is ZB000Base:
-			character.be_attacked_bullet(bomb_value, BulletRegistry.AttackMode.Penetration, false, false)
+			character.be_bomb(bomb_value, is_cherry_bomb)
 	# 罐子沿用敌方爆炸开罐流程，友方从收集阶段起就排除。
 	for reference:WeakRef in pots:
 		# 原罐子可能已被角色死亡回调释放或排队清理。

@@ -9,6 +9,8 @@ class_name IceRoad
 
 ## 冰冻生成结束后30秒消失
 @export var exist_time:float = 30
+## 是否允许自然消失；雪橇车生成的冰道关闭此项，辣椒等主动清除入口仍有效。
+@export var auto_disappear:bool = true
 
 ## 当前冰道行
 var lane :int
@@ -43,8 +45,10 @@ func ice_road_init(curr_lane:int):
 	## 更新冰道数据
 	Global.main_game.zombie_manager.all_ice_roads[lane].append(self)
 
-## 冰道每次更新, 将冰冻的scale.x设置为-1，右边缘不变，修改大小即可
+## [param expand_x] 向左新增的铺冰长度，单位像素；忽略非正长度，已生成的贴图和禁种范围只延伸不收缩。
 func expand_size(expand_x:float):
+	if expand_x <= 0.0:
+		return
 	texture_rect.size.x += expand_x
 	left_x = texture_rect.global_position.x - texture_rect.size.x
 	## 冰道已经覆盖所有植物格子
@@ -59,12 +63,16 @@ func expand_size(expand_x:float):
 
 ## 开始计算消失计时器
 func start_disappear_timer():
+	if not auto_disappear:
+		ice_road_disappear_timer.stop()
+		return
 	ice_road_disappear_timer.wait_time = exist_time
 	ice_road_disappear_timer.start()
 
 ## 冰道消失
 func _on_ice_road_disappear_timer_timeout() -> void:
-	ice_road_disappear()
+	if auto_disappear:
+		ice_road_disappear()
 
 func ice_road_disappear():
 	Global.main_game.zombie_manager.all_ice_roads[lane].erase(self)

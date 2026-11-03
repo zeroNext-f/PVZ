@@ -25,8 +25,15 @@ enum CardType {
 @export var content_id: int = 0
 ## 植物模仿修饰；编号仍指向被模仿植物，不另注册模板。
 @export var is_imitater: bool = false
-## 仅用于保存选卡组合：墓碑吞噬者是否与列表中的下一张卡共用槽位，不参与身份键。
+## 仅用于保存选卡组合：墓碑吞噬者或莲叶是否与下一张卡共用槽位，不参与身份键。
 var shares_slot_with_next: bool = false
+
+## 返回此引用能否作为双卡共用槽的根卡；模仿修饰沿用被模仿植物的资格。
+func can_share_slot_with_next() -> bool:
+	return card_type == CardType.Plant and content_id in [
+		CharacterRegistry.PlantType.P012GraveBuster,
+		CharacterRegistry.PlantType.P017LilyPad,
+	]
 
 
 ## 创建一份独立引用；[param type] 为卡牌类别，[param id] 为角色编号。
@@ -102,7 +109,7 @@ static func from_dict(data: Dictionary) -> ResourceCardReference:
 		if typeof(data["shares_slot_with_next"]) != TYPE_BOOL:
 			return null
 		card_ref.shares_slot_with_next = data["shares_slot_with_next"] \
-			and card_ref.card_type == CardType.Plant and card_ref.content_id == CharacterRegistry.PlantType.P012GraveBuster
+			and card_ref.can_share_slot_with_next()
 	return card_ref if card_ref.is_valid() else null
 
 

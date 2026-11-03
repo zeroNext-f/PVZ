@@ -21,7 +21,7 @@ func pick_target(hand: HandManager) -> Zombie000Base:
 	for hit: Dictionary in hits:
 		# 受击区域的角色所有者，僵王不属于普通僵尸卡类别。
 		var zombie: Zombie000Base = hit.collider.owner as Zombie000Base
-		if not is_instance_valid(zombie) or zombie.is_hypno or zombie.is_death \
+		if not is_instance_valid(zombie) or not zombie.can_be_hypnotized() or zombie.is_hypno or zombie.is_death \
 			or zombie.is_queued_for_deletion() or zombie.hp_component.is_death \
 			or zombie.character_init_type != Character000Base.E_CharacterInitType.IsNorm \
 			or not hand.main_game.zombie_manager.all_zombies_1d.has(zombie):
@@ -37,6 +37,9 @@ func update_hover(hand: HandManager) -> void:
 
 ## [param target] 新悬停对象；只改专用颜色因素，安全处理目标在两帧间死亡的情况。
 func set_hover(target: Zombie000Base) -> void:
+	# 即使直接传入目标，也不能给大体型显示收编高亮；已有提示会按原流程撤销。
+	if is_instance_valid(target) and not target.can_be_hypnotized():
+		target = null
 	if is_instance_valid(hovered_zombie) and hovered_zombie == target:
 		return
 	if is_instance_valid(hovered_zombie):

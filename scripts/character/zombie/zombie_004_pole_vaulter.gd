@@ -11,7 +11,9 @@ var jump_stop_postion :Vector2
 ## 监测到脑子
 var is_detect_brain:=false
 
-## 每次出战只释放一名落地小丑，防止阻跳与动画结束重复通知。
+## 本次跳跃是否实际被阻断；结束后保留结果，不因魅惑清除组件阻跳标记而误释放小丑。
+var _jump_was_blocked: bool = false
+## 每次出战只在正常完成跳跃落地后释放一名小丑，防止动画重复通知。
 var _landing_jackbox_spawned:bool = false
 
 func ready_norm() -> void:
@@ -21,6 +23,8 @@ func ready_norm() -> void:
 ## 魅惑撑杆不再将友方植物作为跨越目标，保留其他原有检测位及阵营转换流程。
 ## 已开始的跳跃继续收势，但解除原植物的坐标补偿和高坚果阻跳记录。
 func be_hypno():
+	if not can_be_hypnotized():
+		return
 	jump_component.ignore_plant_targets = true
 	jump_component.is_jump_compensate = false
 	jump_component.is_jump_stop = false
@@ -46,12 +50,15 @@ func ready_norm_signal_connect():
 
 ## 开始跳跃,跳跃组件信号发射调用
 func jump_start():
+	_jump_was_blocked = false
 	is_jumping = true
 	curr_be_attack_status = E_BeAttackStatusZombie.IsJump
 	signal_status_update.emit()
 
 ## 僵尸跳跃结束,跳跃组件信号发射调用
 func jump_end():
+	# 记录真正结束跳跃时的阻断结果；阻跳也要继续原失杆、步行及啃食恢复流程。
+	_jump_was_blocked = _jump_was_blocked or jump_component.is_jump_stop
 	is_jumping = false
 	jump_component.disable_component(ComponentNormBase.E_IsEnableFactor.Jump)
 
@@ -61,10 +68,13 @@ func jump_end_end():
 	signal_status_update.emit()
 	is_trigger_squash_pos_judge = false
 	is_trigger_tall_nut_stop_jump = false
+	# 只跳过小丑释放入口，不中断原跳跃结束信号后续的移动和啃食恢复。
+	if _jump_was_blocked:
+		return
 	if not _landing_jackbox_spawned:
 		_landing_jackbox_spawned = true
-		# 高坚果阻跳的坐标在信号返回后才写入；提前使用同一修正值锁定落点。
-		var landing_x:float = jump_component.jump_stop_postion.x + 20.0 if jump_component.is_jump_stop else global_position.x
+		# 正常完成动画落地时锁定位置，继续使用原延迟创建与开盒流程。
+		var landing_x:float = global_position.x
 		_spawn_landing_jackbox.call_deferred(landing_x)
 
 

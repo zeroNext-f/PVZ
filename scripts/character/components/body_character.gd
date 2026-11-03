@@ -9,6 +9,8 @@ const IMITATER = preload("res://shader_material/imitater.tres")
 const BODY_MASK = preload("res://shader_material/body_mask.tres")
 var hit_tween: Tween = null  # 发光动画
 var light_and_dark_tween: Tween = null  # 明暗交替动画
+## 三线射手指令目标的一秒确认闪动，重复确认会重启，不影响受击及其他状态颜色。
+var threepeater_confirmation_tween:Tween
 
 # modulate 状态颜色变量
 var base_color := Color(1, 1, 1)
@@ -27,8 +29,28 @@ enum E_ChangeColors{
 	GloveColor,	## 手套携带时仅将来源身体变暗，不覆盖生产、冰冻或受击颜色。
 	PoisonColor,	## 剧毒的独立绿色染色，与寒冰、魅惑等颜色因素合成。
 	HypnoCaptureHover,	## 魅惑菇指向可收编僵尸时的独立高亮，不覆盖受击与异常颜色。
+	BurningColor,	## 烧灼持续高亮，与受击、毒、寒冰及魅惑颜色独立合成。
+	TorchIgnitedColor,	## 辣椒点燃火炬后的独立持续高亮，不借用受击闪光或僵尸烧灼状态。
+	ThreePeaterGuide,	## 三线射手等待鼠标指令时的独立明暗闪动。
+	ThreePeaterHover,	## 手动指定目标时沿用魅惑菇亮度的独立悬停提示。
+	ThreePeaterConfirmation,	## 三线射手确认集火目标后的一秒闪动提示。
 }
 
+
+## 被三线射手手动选为目标后闪动1游戏秒，两次明暗往返后恢复该独立颜色因素。
+func show_threepeater_target_confirmation() -> void:
+	if threepeater_confirmation_tween:
+		threepeater_confirmation_tween.kill()
+	set_other_color(E_ChangeColors.ThreePeaterConfirmation, Color(2, 2, 2))
+	threepeater_confirmation_tween = create_tween()
+	for _cycle:int in range(2): # 两轮各0.5游戏秒，合计一秒。
+		threepeater_confirmation_tween.tween_method(_set_threepeater_confirmation_color, Color(2, 2, 2), Color(0.6, 0.6, 0.6), 0.25)
+		threepeater_confirmation_tween.tween_method(_set_threepeater_confirmation_color, Color(0.6, 0.6, 0.6), Color(2, 2, 2), 0.25)
+	threepeater_confirmation_tween.tween_callback(set_other_color.bind(E_ChangeColors.ThreePeaterConfirmation, Color.WHITE))
+
+## [param value] 当前确认闪动的颜色乘数，独立合成以免覆盖其他状态。
+func _set_threepeater_confirmation_color(value:Color) -> void:
+	set_other_color(E_ChangeColors.ThreePeaterConfirmation, value)
 
 func owner_be_hypno():
 	set_other_color(E_ChangeColors.HypnoColor, Color(1,0.5,1))

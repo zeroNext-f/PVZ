@@ -26,6 +26,9 @@ func click_cell(plant_cell:PlantCell):
 		return
 	# 空手点击才激活留场冰川菇；手持卡牌、铲子、手套不走此入口。
 	var plant: Variant = plant_cell.plant_in_cell.get(CharacterRegistry.PlacePlantInCell.Norm)
+	if is_instance_valid(plant) and plant is Plant019ThreePeater:
+		get_parent().threepeater_guide.start(get_parent(), plant)
+		return
 	if is_instance_valid(plant) and plant is Plant015IceShroom:
 		plant.activate_by_click()
 

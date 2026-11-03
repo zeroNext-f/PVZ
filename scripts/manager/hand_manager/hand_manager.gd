@@ -21,6 +21,8 @@ var curr_hm_status := E_HandManagerStatus.Null:
 		curr_hm_status = value
 ## 当前植物格子
 var curr_plant_cell:PlantCell = null
+## 空手点击三线射手后的鼠标引导状态，独立于卡牌和工具。
+var threepeater_guide:ThreePeaterGuide = preload("res://scripts/manager/hand_manager/threepeater_guide.gd").new()
 
 func _ready() -> void:
 	EventBus.subscribe("main_game_click_card", _click_card)
@@ -29,6 +31,7 @@ func _ready() -> void:
 	EventBus.subscribe("main_game_progress_update", _on_tool_progress_update)
 
 func _process(_delta: float) -> void:
+	threepeater_guide.update(self, _delta)
 	match curr_hm_status:
 		E_HandManagerStatus.Null:
 			hm_null.null_process()
@@ -92,6 +95,8 @@ func _click_glove() -> void:
 
 ## [param progress] 离开正式战斗时取消手套，避免切轮或结算遗留来源引用和预览。
 func _on_tool_progress_update(progress:MainGameManager.E_MainGameProgress) -> void:
+	if progress != MainGameManager.E_MainGameProgress.MAIN_GAME:
+		threepeater_guide.cancel()
 	if progress != MainGameManager.E_MainGameProgress.MAIN_GAME and curr_hm_status == E_HandManagerStatus.Character \
 		and (hm_character.is_hypno_capture() or (is_instance_valid(hm_character.curr_card) \
 		and hm_character.curr_card.is_hypno_zombie_card)):
@@ -136,11 +141,15 @@ func _on_cell_mouse_exit(plant_cell:PlantCell):
 
 ## 取消角色和道具
 func _input(event):
+	if threepeater_guide.handle_input(self, event):
+		get_viewport().set_input_as_handled()
+		return
 	# 魅惑菇以僵尸受击框而非植物格按钮为点击目标，场地边缘也能正常选中。
 	if curr_hm_status == E_HandManagerStatus.Character and hm_character.is_hypno_capture() \
 		and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		if hm_character.capture_hypno_target():
 			curr_hm_status = E_HandManagerStatus.Null
+
 		get_viewport().set_input_as_handled()
 		return
 	## 当前手持状态不为空且鼠标点击事件
@@ -150,3 +159,8 @@ func _input(event):
 		event.button_index == MOUSE_BUTTON_LEFT and event.pressed and not curr_plant_cell:
 			SoundManager.play_other_SFX("tap2")
 			curr_hm_status = E_HandManagerStatus.Null
+
+
+## 离场时恢复鼠标引导表现。
+func _exit_tree() -> void:
+	threepeater_guide.cancel()

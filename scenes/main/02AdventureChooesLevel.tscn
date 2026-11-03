@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://mcad1jl5d1ui"]
 
 [ext_resource type="PackedScene" path="res://scenes/choose_level/adventure_night_sublevels.tscn" id="night_sublevels"]
+[ext_resource type="PackedScene" path="res://scenes/choose_level/adventure_pool_sublevels.tscn" id="pool_sublevels"]
 [ext_resource type="Texture2D" uid="uid://bwevuvs5nnwfx" path="res://assets/image/ui/ui_challenge/Challenge_Background.jpg" id="1_77tr5"]
 [ext_resource type="Theme" uid="uid://cx302yraw066y" path="res://data/ChooesLevel.tres" id="1_dw7cd"]
 [ext_resource type="Script" path="res://scripts/choose_level/choose_level_adventure.gd" id="1_qbhvk"]
@@ -2799,6 +2800,8 @@ vertical_alignment = 1
 [connection signal="pressed" from="MainMenu" to="." method="back_start_menu"]
 
 [node name="NightSublevels" parent="." instance=ExtResource("night_sublevels")]
+
+[node name="PoolSublevels" parent="." instance=ExtResource("pool_sublevels")]
 
 [editable path="AllPage/GridContainer/ChooseLevelButton"]
 [editable path="AllPage/GridContainer/ChooseLevelButton2"]

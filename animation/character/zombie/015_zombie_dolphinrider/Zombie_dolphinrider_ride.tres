@@ -2647,3 +2647,28 @@ tracks/217/keys = {
 "update": 0,
 "values": [Vector2(-47, -126)]
 }
+
+tracks/218/type = "value"
+tracks/218/imported = false
+tracks/218/enabled = true
+tracks/218/path = NodePath("Body/BodyCorrect:visible")
+tracks/218/interp = 1
+tracks/218/loop_wrap = true
+tracks/218/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [true]
+}
+tracks/219/type = "value"
+tracks/219/imported = false
+tracks/219/enabled = true
+tracks/219/path = NodePath("Body/UnderwaterFin:visible")
+tracks/219/interp = 1
+tracks/219/loop_wrap = true
+tracks/219/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [false]
+}

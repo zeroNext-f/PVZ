@@ -54,12 +54,10 @@ func _ready() -> void:
 ## 更新植物信息(创建新植物)
 func update_plant_info_create(_plant_cell:PlantCell, plant_type:CharacterRegistry.PlantType):
 	curr_plant_num[plant_type] = curr_plant_num.get(plant_type, 0) + 1
-	EventBus.push_event("update_card_purple_sun_cost")
 
 ## 更新植物信息(植物死亡)
 func update_plant_info_free(_plant_cell:PlantCell, plant_type:CharacterRegistry.PlantType):
 	curr_plant_num[plant_type] -= 1
-	EventBus.push_event("update_card_purple_sun_cost")
 	if curr_plant_num[plant_type] < 0:
 		printerr(plant_type, ":该植物类型数量小于0")
 #endregion
@@ -455,6 +453,47 @@ func jalapeno_bomb_item_lane(lane:int):
 		if is_instance_valid(p_c.ladder):
 			p_c.ladder.queue_free()
 
+
+## [param source] 正在引爆的辣椒，允许其已进入死亡；在同行存活火炬中按世界X距离选择最近一株。
+## 已点燃火炬仍参与最近选择，但重复点燃不叠加；距离相同时保留行数组中先遇到的一株。
+func ignite_nearest_torch_in_lane(source:Plant000Base) -> void:
+	if not is_instance_valid(source) or source.lane < 0 or source.lane >= all_plant_cells.size():
+		return
+	# 本次最近的一株正式出战火炬，以及距辣椒的横向距离。
+	var nearest:Plant023TorchWood = null
+	var nearest_distance:float = INF
+	for cell:PlantCell in all_plant_cells[source.lane]:
+		# 可能保留已释放占位，必须先通过Variant验证再转换。
+		var plant_reference:Variant = cell.plant_in_cell[CharacterRegistry.PlacePlantInCell.Norm]
+		if not is_instance_valid(plant_reference) or not plant_reference is Plant023TorchWood:
+			continue
+		var torch:Plant023TorchWood = plant_reference as Plant023TorchWood
+		if torch.is_death or torch.is_queued_for_deletion() or torch.hp_component.is_death:
+			continue
+		var distance:float = absf(torch.global_position.x - source.global_position.x)
+		if distance < nearest_distance:
+			nearest = torch
+			nearest_distance = distance
+	if is_instance_valid(nearest):
+		nearest.ignite_by_jalapeno()
+
+## [param cell_reference] 原格弱引用；[param source_id] 死亡火炬编号，用于只释放自己的占位。
+## [param zombie_mode] 继承原场地模式；免费生成正常辣椒，不触发卡牌扣费或冷却，不覆盖后来种入的其他植物。
+func create_ignited_torch_death_jalapeno(cell_reference:WeakRef, source_id:int, zombie_mode:bool = false) -> void:
+	# 延迟执行时原场景/格子可能已经移除，不能访问失效强类型引用。
+	var cell_value:Variant = cell_reference.get_ref()
+	if not is_instance_valid(cell_value):
+		return
+	var cell:PlantCell = cell_value as PlantCell
+	if cell == null or not cell.is_inside_tree() or cell.is_queued_for_deletion() or is_instance_valid(cell.tombstone):
+		return
+	# 死亡通知已完成，但旧实例可能仍在queue_free前的一帧占位中；只清理相同来源的死亡引用。
+	var existing:Variant = cell.plant_in_cell[CharacterRegistry.PlacePlantInCell.Norm]
+	if is_instance_valid(existing):
+		if existing.get_instance_id() != source_id or not existing.is_death:
+			return
+	cell.plant_in_cell[CharacterRegistry.PlacePlantInCell.Norm] = null
+	cell.create_plant(CharacterRegistry.PlantType.P021Jalapeno, false, true, false, zombie_mode)
 
 ## 获取有植物的植物格子 (蹦极)
 func get_cell_have_plant()->Array[PlantCell]:

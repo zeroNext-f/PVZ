@@ -132,11 +132,28 @@ func init_condition():
 
 
 #region 伽刚特尔攻击当前植物格子
+## [param zombie_gargantuar] 本次挥锤巨人；锤击开始时存活的地刺王保护本格花盆，致死一锤也不继续穿透底座。
+## 地刺王仍走原单次耐久损耗，其他植物层与罐子保持原处理，不改变普通碾压入口。
 func be_gargantuar_attack(zombie_gargantuar:Zombie000Base):
-	for place_plant_in_cell in plant_in_cell:
-		if is_instance_valid(plant_in_cell[place_plant_in_cell]) and plant_in_cell[place_plant_in_cell].hurt_box_component.is_enabling:
-			## 被压扁
-			plant_in_cell[place_plant_in_cell].be_flattened_from_enemy(zombie_gargantuar)
+	# 本锤开始时的普通层引用可能失效，先验证再读取体型/存活与受击资格。
+	var norm_reference:Variant = plant_in_cell.get(CharacterRegistry.PlacePlantInCell.Norm)
+	# 整次锤击采用同一快照；不能在地刺王扣到0后重新判断并连带砸毁花盆。
+	var protect_flower_pot:bool = is_instance_valid(norm_reference) and norm_reference is Plant047SpikeRock \
+		and not norm_reference.is_death and not norm_reference.is_queued_for_deletion() \
+		and not norm_reference.hp_component.is_death and norm_reference.hurt_box_component.is_enabling
+	for place_plant_in_cell:CharacterRegistry.PlacePlantInCell in plant_in_cell:
+		# 前一层的死亡回调可能使后一层引用失效，每层都重新验证后转换。
+		var plant_reference:Variant = plant_in_cell[place_plant_in_cell]
+		if not is_instance_valid(plant_reference):
+			continue
+		var target:Plant000Base = plant_reference as Plant000Base
+		if target.is_death or target.is_queued_for_deletion() or not is_instance_valid(target.hurt_box_component) \
+			or not target.hurt_box_component.is_enabling:
+			continue
+		if protect_flower_pot and place_plant_in_cell == CharacterRegistry.PlacePlantInCell.Down \
+			and target.plant_type == CharacterRegistry.PlantType.P034FlowerPot:
+			continue
+		target.be_flattened_from_enemy(zombie_gargantuar)
 	if is_instance_valid(pot):
 		pot.open_pot_be_gargantuar()
 
@@ -167,6 +184,22 @@ func create_plant(plant_type:CharacterRegistry.PlantType, is_imitater:=false, is
 	var plant_condition:ResourcePlantCondition
 	var plant :Plant000Base
 	plant_condition = Global.character_registry.get_plant_info(plant_type, CharacterRegistry.PlantInfoAttribute.PlantConditionResource)
+	# 仅关卡显式豁免高坚果时走普通种植及同种补种，不更改共享资源的紫卡颜色。
+	var requires_upgrade:bool = plant_condition.requires_upgrade_preplant(plant_type)
+	if plant_type == CharacterRegistry.PlantType.P024TallNut and not requires_upgrade \
+		and not is_restoring_plant_from_save and not plant_condition.judge_is_can_plant(self, plant_type):
+		return null
+	# 高坚果的首次升级和同格补种都在落地前重验，恢复及已消耗前置的模仿者变身除外。
+	if plant_type == CharacterRegistry.PlantType.P024TallNut \
+		and requires_upgrade \
+		and not is_restoring_plant_from_save and not is_imitater_material \
+		and plant_condition.get_preplant_purple(self, plant_type) == null:
+		return null
+	# 双子升级在实际落地前重验满成长前置；读档及已消耗前置的模仿者变身不重复消耗原株。
+	if plant_type == CharacterRegistry.PlantType.P042TwinSunFlower \
+		and not is_restoring_plant_from_save and not is_imitater_material \
+		and plant_condition.get_preplant_purple(self, plant_type) == null:
+		return null
 	# 实际创建同步检查大喷菇的地形和禁种条件，避免预览之外的直接调用绕过限制。
 	if is_temporary_fume and not plant_condition.judge_is_can_plant(self, plant_type):
 		return null
@@ -175,9 +208,11 @@ func create_plant(plant_type:CharacterRegistry.PlantType, is_imitater:=false, is
 		return null
 	# 本次创建是否实际替换了同格坚果；首次种植及其他植物不会触发补种爆炸。
 	var wall_nut_replanted: bool = false
+	# 仅替换存活同格水草才触发三格能力；首次种植、恢复及模仿者最终变身不重复触发。
+	var tanglekelp_replanted: bool = false
 
 	## 如果该植物为紫卡
-	if plant_condition.is_purple_card:
+	if requires_upgrade:
 		## 删除紫卡前置植物,创建新植物
 		var condition_pre_plant :ResourcePlantCondition = Global.character_registry.get_plant_info(Global.character_registry.AllPrePlantPurple[plant_type], CharacterRegistry.PlantInfoAttribute.PlantConditionResource)
 		if is_instance_valid(plant_in_cell[condition_pre_plant.place_plant_in_cell]):
@@ -193,6 +228,8 @@ func create_plant(plant_type:CharacterRegistry.PlantType, is_imitater:=false, is
 				or not plant_condition.judge_is_can_plant(self, plant_type):
 				return
 			wall_nut_replanted = plant_type == CharacterRegistry.PlantType.P004WallNut
+			tanglekelp_replanted = plant_type == CharacterRegistry.PlantType.P020TangleKelp \
+				and not is_restoring_plant_from_save
 			existing_plant.is_can_death_language = false
 			existing_plant.character_death_disappear()
 
@@ -256,6 +293,8 @@ func create_plant(plant_type:CharacterRegistry.PlantType, is_imitater:=false, is
 	signal_plant_create.emit(self, plant.plant_type)
 	if wall_nut_replanted:
 		_create_wall_nut_replant_bomb()
+	if tanglekelp_replanted:
+		GrapComponent.execute_replant_cells(self, plant.direction_x_root)
 
 	return plant
 

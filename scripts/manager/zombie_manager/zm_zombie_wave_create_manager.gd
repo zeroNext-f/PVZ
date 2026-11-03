@@ -5,6 +5,8 @@ class_name ZombieWaveCreateManager
 #region 波次生成僵尸管理器参数
 ## 出怪倍率
 var zombie_multy := 1
+## 本关第一波自然刷新排除类型，默认空；每波构建临时池，避免污染后续波次。
+var first_wave_excluded_zombies:Array[CharacterRegistry.ZombieType] = []
 ## 蹦极僵尸数量范围
 var range_num_bungi:Vector2i = Vector2i(3,5)
 #endregion
@@ -32,6 +34,7 @@ var wave_all_zombies:Array[Zombie000Base]
 ## 使用 [param game_para] 初始化波次生成配置、选行系统和随机池，保留本实例已有的运行时权重。
 func init_zombie_wave_create_manager(game_para:ResourceLevelData):
 	zombie_multy = game_para.zombie_multy
+	first_wave_excluded_zombies = game_para.first_wave_excluded_zombies.duplicate()
 	range_num_bungi = game_para.range_num_bungi
 	zombie_choose_row_system.init_zombie_choose_row_system(zombie_manager.all_zombie_rows)
 	update_zombie_refresh_types()
@@ -176,6 +179,23 @@ func _update_weights(wave: int) -> void:
 func get_curr_wave_zombie_list(wave:int, is_big_wave: bool, curr_wave_power_limit:int) ->Array[CharacterRegistry.ZombieType]:
 	## 当前波的僵尸列表
 	var wave_spawn :Array[CharacterRegistry.ZombieType]= []
+	# 首波使用独立过滤池，第二波起继续使用原随机池及其权重。
+	var current_pool:RandomPicker = zombie_choose_random_pool
+	if wave == 0 and not first_wave_excluded_zombies.is_empty():
+		# 当前是否存在冰道，决定雪橇小队是否会被原生成流程转换为冰车。
+		var has_ice_road:bool = zombie_manager.all_ice_roads.any(func(roads:Array): return not roads.is_empty())
+		var pool_data:Array[Array] = [] # 仅本次首波的合法类型与权重。
+		for type:CharacterRegistry.ZombieType in zombie_manager.zombie_refresh_types: # 原关卡自然刷新名单。
+			if type in first_wave_excluded_zombies:
+				continue
+			# 首波缺冰道时排除会转换为禁用冰车的小队，避免从替换入口绕过限制。
+			if type == CharacterRegistry.ZombieType.Z014Bobsled and not has_ice_road \
+				and CharacterRegistry.ZombieType.Z013Zamboni in first_wave_excluded_zombies:
+				continue
+			pool_data.append([type, zombie_weights[type]])
+		if pool_data.is_empty():
+			return wave_spawn
+		current_pool = RandomPicker.new(pool_data)
 	## 目前总战力
 	var total_power = 0
 	## 当前空隙位置
@@ -197,7 +217,7 @@ func get_curr_wave_zombie_list(wave:int, is_big_wave: bool, curr_wave_power_limi
 	# 生成剩余僵尸，直到总战力符合当前战力上限
 	while curr_spare_slot > 0 and total_power < curr_wave_power_limit:
 
-		var selected_zombie:CharacterRegistry.ZombieType = zombie_choose_random_pool.get_random_item()
+		var selected_zombie:CharacterRegistry.ZombieType = current_pool.get_random_item()
 		# 本次抽中类型消耗的战力，统一读取角色注册表。
 		var zombie_power_value: int = CharacterRegistry.ZombieSpawnPower[selected_zombie]
 

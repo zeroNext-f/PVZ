@@ -16,7 +16,7 @@
 [ext_resource type="Texture2D" uid="uid://cu06igj1jmdy" path="res://assets/reanim/SunFlower_head.png" id="12_pvtdc"]
 [ext_resource type="Texture2D" uid="uid://6sig2vr6hn5j" path="res://assets/reanim/SunFlower_blink2.png" id="13_xctyx"]
 [ext_resource type="Animation" uid="uid://c1qu0xk64o0kd" path="res://animation/character/plant/042_twin_sun_flower/TwinSunFlower_idle.tres" id="14_88yxs"]
-[ext_resource type="Script" uid="uid://0hywxqemaott" path="res://scripts/character/components/component_create_sun.gd" id="15_6jvl8"]
+[ext_resource type="Script" path="res://scripts/character/components/component_create_sun.gd" id="15_6jvl8"]
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_m3ffd"]
 _data = {
@@ -39,6 +39,9 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"Animation"]
 [node name="Plant042TwinSunFlower" instance=ExtResource("1_xhjrs")]
 script = ExtResource("2_6jujh")
 plant_type = 42
+
+[node name="HpComponent" parent="." index="3"]
+max_hp = 900
 
 [node name="BodyCorrect" parent="Body" index="0"]
 position = Vector2(-42, -69)

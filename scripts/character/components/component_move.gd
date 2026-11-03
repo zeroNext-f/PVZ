@@ -62,6 +62,8 @@ var is_move := true
 
 ## 移动因素
 var move_factors:Dictionary[E_MoveFactor, bool] = {}
+## 正在吸附本僵尸的窝瓜编号；多个窝瓜分别释放，避免提前恢复自主移动。
+var squash_pull_sources:Dictionary[int, bool] = {}
 
 ## 影响移动的因素、跳跃、舞王入场被卡、伴舞攻击
 enum E_MoveFactor{
@@ -78,7 +80,20 @@ enum E_MoveFactor{
 	IsDeath,				## 停止移动的死亡时
 	FootballImpact,		## 橄榄球前扑、定格与收势时停步。
 	FootballLaunch,		## 顶飞期间由独立轨迹移动，不叠加自主位移。
+	SquashPull,		## 窝瓜吸附期间暂停自主移动，落地或窝瓜提前移除后恢复。
+	BobsledAbandoned,	## 雪橇小队缺冰下车后，空雪橇固定原地直至死亡。
+	TallNutRepulse,	## 高坚果反碾压期间由独立水平推退轨迹控制，不叠加自主移动。
 }
+
+## [param source_id] 窝瓜实例编号；增加独立停步原因，不改变其他移动因素。
+func begin_squash_pull(source_id:int) -> void:
+	squash_pull_sources[source_id] = true
+	update_move_factor(true, E_MoveFactor.SquashPull)
+
+## [param source_id] 已结束的窝瓜；仅在所有吸附结束后撤销停步原因。
+func end_squash_pull(source_id:int) -> void:
+	squash_pull_sources.erase(source_id)
+	update_move_factor(not squash_pull_sources.is_empty(), E_MoveFactor.SquashPull)
 
 signal signal_move_body_y(move_y_value:float)
 
@@ -194,7 +209,10 @@ func _walking_end():
 	walking_status = WalkingStatus.end
 	#print(111,"walk is end")
 
+## 外部位移结束后刷新地面动画采样；固定速度车辆可没有_ground节点，此时无需采样。
 func update_previous_ground_global_x():
+	if not is_instance_valid(_ground):
+		return
 	_previous_ground_global_x = _ground.global_position.x
 
 ## 动画结束时

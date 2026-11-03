@@ -27,7 +27,7 @@
 [ext_resource type="Animation" uid="uid://bd46gjj4qupxd" path="res://animation/character/plant/019_ThreePeater/ThreePeater_shooting1.tres" id="22_fta0t"]
 [ext_resource type="Animation" uid="uid://cd60ddcjfheug" path="res://animation/character/plant/019_ThreePeater/ThreePeater_shooting2.tres" id="23_kms0w"]
 [ext_resource type="Animation" uid="uid://bjebn2uedwhsr" path="res://animation/character/plant/019_ThreePeater/ThreePeater_shooting3.tres" id="24_akh6a"]
-[ext_resource type="Script" uid="uid://4hno3wiv8vxd" path="res://scripts/character/components/attack_behavior_component/component_attack_bullet_three_pea.gd" id="26_jdor8"]
+[ext_resource type="Script" path="res://scripts/character/components/attack_behavior_component/component_attack_bullet_three_track.gd" id="26_jdor8"]
 [ext_resource type="Script" uid="uid://bafp0ax1lmlge" path="res://scripts/character/components/detect_component/component_detect.gd" id="27_wvqqo"]
 
 [sub_resource type="Resource" id="Resource_ci3mc"]
@@ -133,7 +133,7 @@ nodes/TimeScale/position = Vector2(493.534, 104.935)
 node_connections = [&"output", 0, &"TimeScale", &"Add2", 0, &"Animation", &"Add2", 1, &"OneShot", &"Add2 2", 0, &"Animation 2", &"Add2 2", 1, &"Add2 3", &"Add2 3", 0, &"Animation 3", &"Add2 3", 1, &"Animation 4", &"Add2 4", 0, &"Animation 5", &"Add2 4", 1, &"Add2 5", &"Add2 5", 0, &"Animation 6", &"Add2 5", 1, &"Animation 7", &"TimeScale 2", 0, &"Add2 4", &"OneShot", 0, &"Add2 2", &"OneShot", 1, &"TimeScale 2", &"TimeScale", 0, &"Add2"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_wvqqo"]
-size = Vector2(1000, 5)
+size = Vector2(200, 5)
 
 [node name="Plant019ThreePeater" unique_id=308447096 node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_qug25")]
 script = ExtResource("2_3bnf4")
@@ -391,6 +391,7 @@ parameters/TimeScale/scale = 1.0
 
 [node name="AttackComponent" type="Node2D" parent="." index="10" unique_id=1509550506 node_paths=PackedStringArray("markers_2d_bullet")]
 script = ExtResource("26_jdor8")
+attack_bullet_type = 21
 markers_2d_bullet = [NodePath("../Body/BodyCorrect/Marker2DBullet")]
 
 [node name="BulletAttackCdTimer" type="Timer" parent="AttackComponent" index="0" unique_id=992679642]
@@ -398,33 +399,15 @@ script = ExtResource("speed_timer")
 
 [node name="DetectComponent" type="Node2D" parent="AttackComponent" index="1" unique_id=2111932942]
 script = ExtResource("27_wvqqo")
-is_lane = false
+is_lane = true
 
 [node name="Area2D" type="Area2D" parent="AttackComponent/DetectComponent" index="0" unique_id=2101972441]
-position = Vector2(0, -110)
-collision_layer = 0
-collision_mask = 4
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="AttackComponent/DetectComponent/Area2D" index="0" unique_id=1078916783]
-position = Vector2(500, 0)
-shape = SubResource("RectangleShape2D_wvqqo")
-
-[node name="Area2D2" type="Area2D" parent="AttackComponent/DetectComponent" index="1" unique_id=1898480985]
 position = Vector2(0, -25)
 collision_layer = 0
 collision_mask = 4
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="AttackComponent/DetectComponent/Area2D2" index="0" unique_id=99692490]
-position = Vector2(500, 0)
-shape = SubResource("RectangleShape2D_wvqqo")
-
-[node name="Area2D3" type="Area2D" parent="AttackComponent/DetectComponent" index="2" unique_id=87773842]
-position = Vector2(0, 55)
-collision_layer = 0
-collision_mask = 4
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="AttackComponent/DetectComponent/Area2D3" index="0" unique_id=957307070]
-position = Vector2(500, 0)
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AttackComponent/DetectComponent/Area2D" index="0" unique_id=1078916783]
+position = Vector2(100, 0)
 shape = SubResource("RectangleShape2D_wvqqo")
 
 [connection signal="timeout" from="AttackComponent/BulletAttackCdTimer" to="AttackComponent" method="_on_bullet_attack_cd_timer_timeout"]

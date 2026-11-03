@@ -21,9 +21,9 @@ enum CardContext {
 var card_context: CardContext = CardContext.Catalog
 ## 魅惑菇收编生成的单次僵尸卡：免费任意格放置、出生魅惑，并严格按临时卡期限销毁。
 var is_hypno_zombie_card: bool = false
-## 共用槽位的下层卡，仅墓碑吞噬者作为槽位根保存；两张卡始终是独立运行实例。
+## 共用槽位的下层卡，由墓碑吞噬者或莲叶作为槽位根保存；两张卡始终是独立运行实例。
 var shared_slot_partner: Card
-## 下层卡指向墓碑吞噬者槽位根；不参与卡牌身份或模板注册。
+## 下层卡指向共用槽位根；不参与卡牌身份或模板注册。
 var shared_slot_owner: Card
 ## 当前卡是否位于共用槽位上层；下层禁用输入，仍按正常_process推进冷却。
 var shared_slot_active: bool = true
@@ -204,7 +204,7 @@ func _on_button_pressed() -> void:
 				SoundManager.play_other_SFX("buzzer")
 
 
-## 返回该物理槽位的全部卡片，顺序为墓碑吞噬者、下层卡；普通槽位仅返回自身。
+## 返回该物理槽位的全部卡片，顺序为共用根卡、下层卡；普通槽位仅返回自身。
 func get_slot_cards() -> Array[Card]:
 	# 调用下层时也统一返回槽位根的列表。
 	if is_instance_valid(shared_slot_owner):

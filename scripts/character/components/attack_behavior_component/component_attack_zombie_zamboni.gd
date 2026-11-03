@@ -8,7 +8,7 @@ func attack_start():
 ## 共用即时碾压；[param detection] 提供当前目标，[param attacker] 提供反制调用对象。
 static func crush_detected_target(detection:DetectComponent, attacker:Character000Base) -> void:
 	if is_instance_valid(detection.enemy_can_be_attacked):
-		detection.enemy_can_be_attacked.be_flattened_from_enemy(attacker)
+		detection.enemy_can_be_attacked.be_crushed_from_enemy(attacker)
 	elif is_instance_valid(detection.brain):
 		# 脑子沿用原有碾压入口。
 		var brain:BrainOnZombieMode = detection.brain

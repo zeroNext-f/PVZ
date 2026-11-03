@@ -35,7 +35,6 @@ func _ready() -> void:
 	Global.config_service.signal_change_disappear_spare_card_placeholder.connect(judge_disappear_add_card_bar)
 	EventBus.subscribe("test_change_sun_value", func(value): sun_value = value)
 	EventBus.subscribe("add_sun_value", func(value): sun_value+=value)
-	EventBus.subscribe("update_card_purple_sun_cost", update_card_purple_sun_cost)
 
 
 ## 初始化出战卡槽，管理器调用
@@ -54,7 +53,6 @@ func init_card_slot_battle(max_choosed_card_num:int, sun:int):
 
 ## 正式战斗时切换卡片上下文、检查费用并连接一次成功结算信号。
 func main_game_refresh_card():
-	update_card_purple_sun_cost()
 	# 出战卡顺序决定快捷键位置。
 	for i: int in range(curr_cards.size()):
 		# 同槽两层分别设置战斗用途及结算信号，共享槽位快捷键编号。
@@ -64,7 +62,11 @@ func main_game_refresh_card():
 				continue
 			card.card_context = Card.CardContext.Battle
 			card.judge_sun_enough(sun_value)
-			card.set_shortcut((i+1)%10)
+			# 现有数字快捷键仅覆盖前十槽，扩展槽位不能循环标成1而误导玩家。
+			if i < 10:
+				card.set_shortcut((i+1)%10)
+			else:
+				card.set_shortcut_disappear()
 			if not card.signal_card_use_end.is_connected(card_use_end):
 				card.signal_card_use_end.connect(card_use_end)
 		curr_cards[i].set_shared_slot_layer(false)
@@ -74,7 +76,7 @@ func main_game_refresh_card():
 func start_next_game_card_slot_battle_update():
 	# 本轮保留的卡片顺序不变。
 	for i: int in range(curr_cards.size()):
-		# 两层均执行原有轮间重选恢复，选卡画面固定显示墓碑吞噬者。
+		# 两层均执行原有轮间重选恢复，选卡画面固定显示共用槽的根卡（墓碑吞噬者或莲叶）。
 		for card: Card in curr_cards[i].get_slot_cards():
 			card.card_context = Card.CardContext.Selection
 			card.set_card_cool_end()
@@ -107,16 +109,3 @@ func judge_disappear_add_card_bar():
 			cards_placeholder[i].visible = true
 
 #endregion
-
-## 植物数量变化一帧后刷新植物紫卡价格，普通僵尸及僵王不查询植物计数。
-func update_card_purple_sun_cost():
-	await get_tree().process_frame
-	# 本次仍在槽中的卡片。
-	for card: Card in get_all_cards():
-		if card.card_reference.card_type != ResourceCardReference.CardType.Plant:
-			continue
-		# 紫卡的植物内容编号，用于查询本关同种植物数量。
-		var plant_type: int = card.card_reference.content_id
-		if card.is_purple_card and Global.main_game.plant_cell_manager.curr_plant_num.has(plant_type):
-			card.sun_cost = Global.character_registry.get_plant_info(plant_type, CharacterRegistry.PlantInfoAttribute.SunCost) + 50 * Global.main_game.plant_cell_manager.curr_plant_num[plant_type]
-			card.judge_sun_enough(sun_value)

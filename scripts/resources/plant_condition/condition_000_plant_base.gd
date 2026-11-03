@@ -22,6 +22,13 @@ var plant_condition:int = 22
 #@export var is_double_plant_cell:=false
 
 
+## [param plant_type] 当前植物类型；返回本局是否实际需要紫卡升级前置，外观仍由is_purple_card决定。
+func requires_upgrade_preplant(plant_type:CharacterRegistry.PlantType) -> bool:
+	if plant_type == CharacterRegistry.PlantType.P024TallNut and is_instance_valid(Global.main_game) \
+		and Global.main_game.game_para != null and Global.main_game.game_para.tall_nut_without_upgrade:
+		return false
+	return is_purple_card
+
 ## 判断是否可以种植
 func judge_is_can_plant(plant_cell:PlantCell, curr_plant_type:CharacterRegistry.PlantType) -> bool:
 	# 大喷菇仅忽略植物层占位，地形与普通格子禁种状态仍按正常植物规则检查。
@@ -38,7 +45,7 @@ func judge_is_can_plant(plant_cell:PlantCell, curr_plant_type:CharacterRegistry.
 	if is_special_plants:
 		return judge_special_plants_condition(plant_cell)
 	## 普通植物非紫卡
-	elif not is_purple_card:
+	elif not requires_upgrade_preplant(curr_plant_type):
 		# 当前占位引用可能已释放，先检查有效性，再判断是否允许同类补种。
 		var existing_plant: Variant = plant_cell.plant_in_cell[place_plant_in_cell]
 		# 普通植物默认只接受空位；配置允许补种时也接受相同种类的存活植物。
@@ -78,6 +85,8 @@ func judge_planting_order(plant_cell:PlantCell) -> bool:
 
 ## 判断当前场上是否有紫卡预种植植物,紫卡是否可以种植
 func judge_purple_card_can_plant(all_plant_cells, curr_plant_type:CharacterRegistry.PlantType)->bool:
+	if not requires_upgrade_preplant(curr_plant_type):
+		return true
 	for plant_cells_row in all_plant_cells:
 		for plant_cell in plant_cells_row:
 			if get_preplant_purple(plant_cell, curr_plant_type) != null:
@@ -87,6 +96,13 @@ func judge_purple_card_can_plant(all_plant_cells, curr_plant_type:CharacterRegis
 ## 获取当前格子紫卡预种植植物
 ## 返回预种植植物,若当前植物格子可以种植紫卡,返回预种植紫卡,
 func get_preplant_purple(plant_cell:PlantCell, curr_plant_type:CharacterRegistry.PlantType) ->Plant000Base:
+	# 允许同格补种的紫卡也把存活同类视为合法替换对象；只影响独立开启此配置的高坚果。
+	var same_plant: Variant = plant_cell.plant_in_cell.get(place_plant_in_cell)
+	if can_replant_same_type and is_instance_valid(same_plant) \
+		and same_plant.plant_type == curr_plant_type and not same_plant.is_death \
+		and not same_plant.is_queued_for_deletion() and not same_plant.hp_component.is_death \
+		and plant_cell.can_common_plant and (plant_condition & plant_cell.curr_condition) != 0:
+		return same_plant
 	## 紫卡前置植物
 	var precondition_plant:CharacterRegistry.PlantType = Global.character_registry.AllPrePlantPurple[curr_plant_type]
 	## 当前格子存在前置种植植物
@@ -94,6 +110,15 @@ func get_preplant_purple(plant_cell:PlantCell, curr_plant_type:CharacterRegistry
 	var place_precondition_plant:CharacterRegistry.PlacePlantInCell = condition_precondition_plant.place_plant_in_cell
 	if is_instance_valid(plant_cell.plant_in_cell[place_precondition_plant]) and\
 	plant_cell.plant_in_cell[place_precondition_plant].plant_type == precondition_plant:
+		# 双子向日葵只接受已经达到成长上限并持续发光的存活向日葵；其他紫卡保持原规则。
+		if curr_plant_type == CharacterRegistry.PlantType.P042TwinSunFlower:
+			# 原株类型确认后读取其独立成长和生产高亮状态，不把受击闪光当作满成长。
+			var sunflower: Plant002SunFlower = plant_cell.plant_in_cell[place_precondition_plant] as Plant002SunFlower
+			if sunflower == null or sunflower.is_death or sunflower.is_queued_for_deletion() \
+				or sunflower.hp_component.is_death \
+				or sunflower.hp_component.max_hp != Plant002SunFlower.GROWTH_MAX_HP \
+				or not sunflower.create_sun_component.persistent_production_glow:
+				return null
 		## 如果种植位置不相同,并且当前植物格子已有紫卡植物位置的植物
 		if place_precondition_plant != place_plant_in_cell and is_instance_valid(plant_cell.plant_in_cell[place_plant_in_cell]):
 			return null

@@ -11,15 +11,15 @@ class_name Zombie013Zamboni
 @export_group("动画状态")
 @export var is_caltrop:= false
 
-## 僵尸上一帧和当前帧位置(更新冰道使用)
+## 冰车已经到达的最左横坐标；回拉及重走旧路不缩短冰道，也不重复累计旧路长度。
 var zombie_last_x:float
+## 当前帧冰车世界横坐标，用于判断是否向未铺冰的新区域前进。
 var zombie_curr_x:float
 
 ## 初始化正常出战角色信号连接
 func ready_norm_signal_connect():
 	super()
 	hp_stage_change_component.signal_hp_stage_change.connect(hp_stage_zamboni_change)
-	hp_component.signal_hp_component_death.connect(func():ice_road.start_disappear_timer())
 
 ## 初始化正常出战角色
 func ready_norm():
@@ -36,9 +36,10 @@ func ready_show():
 	move_component.disable_component(ComponentNormBase.E_IsEnableFactor.InitType)
 	zombie_last_x = global_position.x
 
+## [param _delta] 帧耗时；仅超出历史最左位置时延伸冰道，窝瓜吸附等回拉不改变已铺范围。
 func _process(_delta: float) -> void:
 	zombie_curr_x = global_position.x
-	if zombie_curr_x != zombie_last_x and is_instance_valid(ice_road):
+	if zombie_curr_x < zombie_last_x and is_instance_valid(ice_road):
 		ice_road.expand_size(zombie_last_x - zombie_curr_x)
 		zombie_last_x = zombie_curr_x
 
@@ -46,17 +47,15 @@ func _process(_delta: float) -> void:
 ## 血量状态变化时zamboni的特殊变化
 ## 共4个变化阶段
 ## 0:无变化
-## 1:损毁烟雾\速度减半
-## 2:停止移动\车身抖动
+## 1:损毁烟雾，不改变速度
+## 2:车身抖动但继续移动，不改变速度
 ## 3:爆炸死亡
 func hp_stage_zamboni_change(curr_hp_stage:int):
 	match curr_hp_stage:
 		1:
 			smoke.emitting = true
-			update_speed_factor(0.5, E_Influence_Speed_Factor.ZamboniHp)
 		2:
-			update_speed_factor(0, E_Influence_Speed_Factor.ZamboniHp)
-			## 停止移动,抖动
+			## 仅车身表现抖动，不给移动组件施加减速或停车因素。
 			var tween = create_tween()
 			tween.tween_property(body, "position", body.position + Vector2(1, 1), 0.05).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 			tween.tween_property(body, "position", body.position, 0.05).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)

@@ -68,6 +68,8 @@ func _start_second_life() -> void:
 
 ## [param attack_value] 爆炸伤害；[param is_cherry_bomb] 决定是否归为灰烬来源。
 func be_bomb(attack_value:int, is_cherry_bomb:bool = false):
+	# 专属生命入口也观察实际扣血；破报无敌或来源抗性把伤害降为0时不触发。
+	var burning_hit:Dictionary = BurningState.capture_hit(self) if is_cherry_bomb else {}
 	# 第一生命耗尽只进入破报，第二生命才允许原灰烬死亡与删除表现。
 	var paper_hp:HpComponentPaper = hp_component as HpComponentPaper
 	paper_hp.lose_categorized_hp(attack_value, HpComponentPaper.DamageKind.Ash if is_cherry_bomb else HpComponentPaper.DamageKind.Normal, BulletRegistry.AttackMode.Penetration)
@@ -75,6 +77,17 @@ func be_bomb(attack_value:int, is_cherry_bomb:bool = false):
 		if is_cherry_bomb:
 			charred_component.play_charred_anim()
 		queue_free()
+	BurningState.finish_hit(burning_hit)
+
+## [param attack_value] 窝瓜穿透伤害，记录碾压来源；保留两条生命和第二生命同来源九成减伤。
+func be_squash(attack_value:int = 1800):
+	is_can_death_language = false
+	# 使用已有来源上下文，不绕过破报阶段，也不将一击溢出带入第二生命。
+	var paper_hp:HpComponentPaper = hp_component as HpComponentPaper
+	paper_hp.lose_categorized_hp(attack_value, HpComponentPaper.DamageKind.Crush, BulletRegistry.AttackMode.Penetration)
+	if is_death:
+		queue_free()
+	set_deferred("is_can_death_language", true)
 
 ## 场外等管理性直接移除沿用原语义，必须先发送真正死亡通知，不能留下被释放的登记引用。
 func character_death_disappear():

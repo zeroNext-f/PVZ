@@ -1,9 +1,9 @@
-## 战斗手套的原实例搬运事务，不调用种植、铲除或死亡接口，不重置组件状态。
+## 战斗手套的原实例搬运事务；同类补种单独复用种植入口，其余迁移不重置组件状态。
 extends RefCounted
 class_name BattlePlantMover
 
 
-## [param plant] 待移动的存活植物；[param target] 放置格。支撑层可保留，不能覆盖或交换植物。
+## [param plant] 待移动的存活植物；[param target] 放置格。支撑层可保留，仅允许配置支持的同种补种覆盖。
 static func can_move(plant:Plant000Base, target:PlantCell) -> bool:
 	if not is_instance_valid(plant) or plant.is_death or plant.is_queued_for_deletion() \
 		or not is_instance_valid(target) or not is_instance_valid(plant.plant_cell) or target == plant.plant_cell:
@@ -12,6 +12,8 @@ static func can_move(plant:Plant000Base, target:PlantCell) -> bool:
 	var type:CharacterRegistry.PlantType = plant.imitater_plant_type if plant is Plant999Imitater else plant.plant_type
 	# 只读查询，不执行紫卡前置植物替换。
 	var condition:ResourcePlantCondition = Global.character_registry.get_plant_info(type, CharacterRegistry.PlantInfoAttribute.PlantConditionResource)
+	if can_replant(plant, target):
+		return true
 	if not _empty_target(target, condition.place_plant_in_cell, plant is Plant036CoffeeBean):
 		return false
 	if plant is Plant012GraveBuster or plant is Plant036CoffeeBean:
@@ -62,6 +64,8 @@ static func _right_cell(cell:PlantCell) -> PlantCell:
 static func move(plant:Plant000Base, target:PlantCell) -> bool:
 	if not can_move(plant, target):
 		return false
+	if can_replant(plant, target):
+		return _replant(plant, target)
 	# 迁移前的格子和实际登记层，模仿者可能挂在专用容器但登记在被模仿植物层。
 	var source:PlantCell = plant.plant_cell
 	# 查找真实占位，不依赖植物编号推断模仿者占位。
@@ -139,6 +143,43 @@ static func move(plant:Plant000Base, target:PlantCell) -> bool:
 			detector.enemy_can_be_attacked = null
 	# 等物理重叠结果更新后重判目标，旧格僵尸不能继续隔行啃食原引用。
 	_refresh_detection.call_deferred(plant)
+	return true
+
+
+## [param plant] 手套来源；[param target] 不同的目标格；只允许存活实际同种植物且原种植条件开启同格补种。
+static func can_replant(plant:Plant000Base, target:PlantCell) -> bool:
+	if not is_instance_valid(plant) or plant.is_death or plant.is_queued_for_deletion() or plant.hp_component.is_death \
+		or not is_instance_valid(target) or target.is_queued_for_deletion() \
+		or not is_instance_valid(plant.plant_cell) or target == plant.plant_cell or plant is Plant999Imitater:
+		return false
+	# 读取原补种配置，不让普通植物或紫卡升级前置被手套当作同种补种。
+	var condition:ResourcePlantCondition = Global.character_registry.get_plant_info(plant.plant_type, CharacterRegistry.PlantInfoAttribute.PlantConditionResource)
+	if not condition.can_replant_same_type:
+		return false
+	# 格子可能保留已释放引用，验证之后才访问类型和生命。
+	var occupant:Variant = target.plant_in_cell.get(condition.place_plant_in_cell)
+	if not is_instance_valid(occupant):
+		return false
+	if occupant == plant or occupant.plant_type != plant.plant_type or occupant.is_death \
+		or occupant.is_queued_for_deletion() or occupant.hp_component.is_death:
+		return false
+	return condition.judge_is_can_plant(target, plant.plant_type)
+
+
+## [param plant] 补种消耗来源；[param target] 同种植物目标格；成功后复用原补种满血与收益，仅消耗来源、不扣卡牌费用。
+static func _replant(plant:Plant000Base, target:PlantCell) -> bool:
+	if not can_replant(plant, target):
+		return false
+	# 已变身模仿植物保留外观材质，但仍走正式补种条件，不绕过紫卡前置校验。
+	var replacement:Plant000Base = target.create_plant(plant.plant_type)
+	if not is_instance_valid(replacement):
+		return false
+	if plant.is_imitater_material:
+		replacement.is_imitater_material = true
+		replacement.plant_imitater_update_body()
+	# 原来源仍在原格运行；成功创建后才移除，失败不消耗。死亡信号同步维护原格数量及手套退出。
+	plant.is_can_death_language = false
+	plant.character_death_disappear()
 	return true
 
 

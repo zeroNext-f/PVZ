@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1_n07v5")
-plant_condition = 2
+plant_condition = 6
 place_plant_in_cell = 0
 is_special_plants = false
 is_purple_card = false

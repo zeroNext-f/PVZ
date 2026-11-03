@@ -55,6 +55,7 @@ func _ready() -> void:
 		ResourceCardReference.CardType.Plant:
 			# 在植物边界解释角色编号，不能依靠其他类别的空字段推导。
 			var plant_type: CharacterRegistry.PlantType = card_reference.content_id as CharacterRegistry.PlantType
+			# 全局紫卡加价已关闭：所有植物卡从注册表读取基础费用，不随场上同类数量变化。
 			sun_cost = Global.character_registry.get_plant_info(plant_type, CharacterRegistry.PlantInfoAttribute.SunCost)
 			cool_time = Global.character_registry.get_plant_info(plant_type, CharacterRegistry.PlantInfoAttribute.CoolTime)
 			plant_condition = Global.character_registry.get_plant_info(plant_type, CharacterRegistry.PlantInfoAttribute.PlantConditionResource)

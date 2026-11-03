@@ -149,6 +149,7 @@ parameters/TimeScale/scale = 1.0
 [node name="BombComponent" type="Node2D" parent="." index="10"]
 unique_name_in_owner = true
 script = ExtResource("12_wobmd")
+bomb_value = 1800
 can_attack_plant_status = 7
 can_attack_zombie_status = 31
 bomb_sfx = &"Jalapeno"

@@ -79,6 +79,8 @@ func set_choose_level(curr_game_mode: MainSceneRegistry.MainScenes, curr_level_p
 @export_range(0, 1000, 1, "or_greater") var norm_health_per_other:int = 50
 ## 每轮游戏出怪波次，每10波生成1旗帜
 @export var max_wave := 30
+## 第一波自然刷新排除类型；仅本关生效，从第二波恢复正常名单，不影响开局预览或其他关卡。
+@export var first_wave_excluded_zombies:Array[CharacterRegistry.ZombieType] = []
 ## 僵尸种类刷新列表 多轮游戏且自然出怪 自动更新自然出怪列表
 @export var zombie_refresh_types: Array[CharacterRegistry.ZombieType] = [
 	CharacterRegistry.ZombieType.Z001Norm, # 普通僵尸
@@ -148,6 +150,14 @@ func set_choose_level(curr_game_mode: MainSceneRegistry.MainScenes, curr_level_p
 ## 指定传送带卡片，键为从 0 开始的生成序号；未指定的序号使用随机池。
 @export var conveyor_order: Dictionary[int, ResourceCardReference] = {}
 @export var create_new_card_speed: float = 1
+## 仅泳池3-9启用原版3-10式传送带调节：卡数影响间隔，同类囤积/连发和莲叶数量影响权重。
+@export var conveyor_classic_pool_rules: bool = false
+## 传送带固定发卡间隔，单位游戏秒；0沿用原倍率或卡数分档，正数覆盖间隔但保留动态权重及满带暂停。
+@export var conveyor_fixed_interval: float = 0.0
+## 场上坚果与高坚果均不存在时，将即将生成的高坚果替换为坚果；默认关闭，不检查带上卡片。
+@export var conveyor_tall_nut_fallback:bool = false
+## 本关高坚果按普通植物直接种植，不消耗升级前置；保留注册资源紫卡外观，默认关闭。
+@export var tall_nut_without_upgrade:bool = false
 
 @export_subgroup("种子雨卡片参数")
 ## 种子雨随机卡片与非负整数权重；0 表示不参与抽取，与传送带配置相互独立。

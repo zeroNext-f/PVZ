@@ -11,6 +11,8 @@ var shot_parameters:Dictionary = {}
 var shot_camp:CharacterRegistry.CharacterType = CharacterRegistry.CharacterType.Plant
 ## 触发分裂的目标编号，供子弹排除出生点重复命中。
 var ignored_target_id:int = 0
+## 由原弹指定分裂弹类型，默认仍为普通破甲；火焰变体仅替换生成场景，数量/角度/代数不变。
+var split_bullet_type:BulletRegistry.BulletType = BulletRegistry.BulletType.Bullet018ArmorPiercingPea
 
 
 ## 延迟生成，避免父容器正在添加本任务时再次改变其子节点。
@@ -18,7 +20,7 @@ func _ready() -> void:
 	_fire.call_deferred()
 
 
-## 同时生成四颗编号 18 的子弹，关闭二次分裂；关卡已结束时取消。
+## 同时生成四颗指定类型的破甲弹，关闭二次分裂；关卡已结束时取消。
 func _fire() -> void:
 	# 原弹使用的最终子弹父容器。
 	var bullet_parent:Node2D = get_parent() as Node2D
@@ -35,7 +37,7 @@ func _fire() -> void:
 		for _shot_index:int in range(SHOTS_PER_DIRECTION):
 			# 避免在辅助脚本中预加载自身子弹场景，实例化统一通过注册表。
 			var bullet:Bullet000NormBase = Global.bullet_registry.get_bullet_scenes(
-				BulletRegistry.BulletType.Bullet018ArmorPiercingPea).instantiate() as Bullet000NormBase
+				split_bullet_type).instantiate() as Bullet000NormBase
 			bullet.set("can_split", false)
 			bullet.set("ignored_target_id", ignored_target_id)
 			bullet.bullet_camp = shot_camp

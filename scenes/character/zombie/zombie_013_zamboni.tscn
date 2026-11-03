@@ -1347,10 +1347,13 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"
 script = ExtResource("2_tjtkh")
 is_caltrop = false
 zombie_type = 13
+zombie_body_size = 2
+immune_to_abnormal_status = true
 is_ignore_ladder = true
 
 [node name="IceRoad" parent="." index="0" instance=ExtResource("3_yuhtx")]
 position = Vector2(80, -22)
+auto_disappear = false
 
 [node name="Shadow" parent="." index="1"]
 scale = Vector2(1.86047, 1)

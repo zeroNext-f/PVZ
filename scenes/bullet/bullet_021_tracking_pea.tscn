@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/bullet/bullet_001_pea.tscn" id="1_base"]
+[ext_resource type="Script" path="res://scripts/bullet/bullet_021_tracking_pea.gd" id="2_tracking"]
+[ext_resource type="Script" path="res://scripts/bullet/component/movement/bullet_movement_track.gd" id="3_move"]
+
+[node name="Bullet021TrackingPea" instance=ExtResource("1_base")]
+script = ExtResource("2_tracking")
+bullet_type = 21
+attack_value = 40
+speed = 300.0
+
+[node name="MovementComponent" parent="." index="4"]
+script = ExtResource("3_move")
+target_pos_corr_value = Vector2(0, -40)
+first_point_time = 10.0
+bullet_speed_r_target_null = 0.2

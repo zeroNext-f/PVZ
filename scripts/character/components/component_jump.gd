@@ -27,6 +27,10 @@ var jump_plant_position_x : float# 正在跳跃的植物的X值
 var is_jump_stop := false
 ## 跳跃高坚果位置
 var jump_stop_postion :Vector2
+## 记录真正阻跳的植物弱引用，动画判定成功时才通知扣血，进入检测框本身不扣血。
+var _jump_stop_plant: WeakRef
+## 同一次越障的阻跳代价只结算一次，避免动画或重叠区域重复回调。
+var _jump_stop_cost_paid: bool = false
 ## 跳跃中
 var is_jumping := false
 @export_group("跳跃音效")
@@ -74,6 +78,7 @@ func disable_component(is_enable_factor:E_IsEnableFactor):
 ## [is_jump_compensate:bool]是否有跳跃补偿
 ## [global_pos_x:float]跳跃补偿对应植物位置
 func jump_start(curr_is_jump_compensate:bool, global_pos_x:float=0):
+	_jump_stop_cost_paid = false
 	self.is_jump_compensate = curr_is_jump_compensate
 	is_jumping = true
 	signal_jump_start.emit()
@@ -98,10 +103,17 @@ func jump_be_stop(plant:Plant000Base):
 		return
 	is_jump_stop = true
 	jump_stop_postion = plant.global_position
+	_jump_stop_plant = weakref(plant)
 
 ## 动画调用，判断跳跃是否被强行停止
 func judge_jump_be_stop():
 	if is_jump_stop:
+		if not _jump_stop_cost_paid:
+			_jump_stop_cost_paid = true
+			# 原阻跳者可能已被移除；不向新补种的高坚果转移旧事件代价。
+			var blocker: Plant024TallNut = _jump_stop_plant.get_ref() as Plant024TallNut if _jump_stop_plant != null else null
+			if is_instance_valid(blocker):
+				blocker.on_jump_blocked(owner_zombie)
 		await jump_end()
 		owner.global_position.x = jump_stop_postion.x+20
 

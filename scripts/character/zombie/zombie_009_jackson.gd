@@ -140,6 +140,8 @@ func dancer_manager_change():
 
 ## 僵尸被魅惑
 func be_hypno():
+	if not can_be_hypnotized():
+		return
 	jackson_be_hypno()
 	super()
 

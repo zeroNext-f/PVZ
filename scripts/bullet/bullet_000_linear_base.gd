@@ -2,8 +2,8 @@ extends Bullet000NormBase
 class_name BulletLinear000Base
 ## 直线移动子弹基类
 
-## 线性移动组件
-@onready var movement_component: BulletMovementLinear = $MovementComponent
+## 默认使用直线移动；通过共用移动接口允许追踪豌豆注入猫尾草移动组件，不改变其他直线弹行为。
+@onready var movement_component: BulletMovementBase = $MovementComponent
 
 ## 对僵尸敌人造成伤害,直线类子弹重写
 func _attack_zombie(zombie:Zombie000Base):

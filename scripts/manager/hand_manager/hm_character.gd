@@ -92,6 +92,8 @@ func click_card(card: Card) -> bool:
 
 ## 让 [param curr_plant_condition] 为 [param plant_type] 找到的预置植物开始明暗提示。
 func start_preplant_purple_light(curr_plant_condition: ResourcePlantCondition, plant_type: CharacterRegistry.PlantType) -> void:
+	if not curr_plant_condition.requires_upgrade_preplant(plant_type):
+		return
 	curr_all_preplant_purple = curr_plant_condition.get_all_preplant_purple(Global.main_game.plant_cell_manager.all_plant_cells, plant_type)
 	# 本次紫卡可以升级的预置植物。
 	for preplant_purple: Plant000Base in curr_all_preplant_purple:

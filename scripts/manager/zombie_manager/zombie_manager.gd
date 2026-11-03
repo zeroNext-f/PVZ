@@ -47,6 +47,27 @@ var _round_generation: int = 0
 var _adventure_norm_health_refresh_pending: bool = false
 ## 等待延迟创建的旗帜召唤数，避免同帧致死先触发末波清场。
 var _pending_flag_summons:int = 0
+## 等待独立生成的雪橇亡语批次数，来源雪橇先移除也不能提前判胜。
+var _pending_bobsled_releases: int = 0
+
+## [param requests] 雪橇保存的纯数据生成请求；先登记等待，再延迟避开物理查询刷新。
+func queue_bobsled_release(requests: Array[Dictionary]) -> void:
+	_pending_bobsled_releases += 1
+	_complete_bobsled_release.call_deferred(requests)
+
+## [param requests] 同一辆雪橇的四名队员与至多四名搭载成员，按请求位置创建新实例。
+func _complete_bobsled_release(requests: Array[Dictionary]) -> void:
+	if is_game_running():
+		for request: Dictionary in requests:
+			# 同波同行、自然刷新归属与阵营由来源保留，角色自身使用对应类型的初始属性。
+			var parameters: Dictionary = {Zombie000Base.E_ZInitAttr.CharacterInitType: Character000Base.E_CharacterInitType.IsNorm,
+				Zombie000Base.E_ZInitAttr.Lane: request.lane, Zombie000Base.E_ZInitAttr.CurrWave: request.wave,
+				Zombie000Base.E_ZInitAttr.ParticipatesNaturalRefresh: request.natural}
+			var zombie: Zombie000Base = create_norm_zombie(request.type, all_zombie_rows[request.lane], parameters, request.position)
+			if is_instance_valid(zombie) and request.hypno:
+				zombie.be_hypno()
+	_pending_bobsled_releases = maxi(_pending_bobsled_releases - 1, 0)
+	_try_finish_wave(Vector2.ZERO)
 
 #region 僵尸管理器参数
 ## 刷怪类型
@@ -768,7 +789,7 @@ func _remove_natural_refresh_zombie_if_absent(instance_id: int) -> void:
 ## 普通死亡、魅惑及僵王死亡共用原有清场条件，不受额外 Boss 胜利选项影响。
 ## [param global_pos] 最后一个敌人的世界坐标，用于原清场胜利的奖杯位置。
 func _try_finish_wave(global_pos: Vector2) -> void:
-	if not is_game_running() or _pending_flag_summons > 0:
+	if not is_game_running() or _pending_flag_summons > 0 or _pending_bobsled_releases > 0:
 		return
 	if is_end_wave and curr_zombie_num == 0:
 		if is_instance_valid(multi_round_end_wave_timer):
@@ -1057,18 +1078,23 @@ func jalapeno_bomb_item_lane(lane:int):
 
 ## 火爆辣椒处理整行普通僵尸，并攻击所有存活僵王；僵王检查受击窗口，不限制行号。[br]
 ## [param lane] 辣椒所在的零起始行号，仅用于选择受影响的普通僵尸。
-func jalapeno_bomb_lane_zombie(lane:int):
-	# 倒序遍历当前行，普通僵尸被炸死时可能立即从列表移除。
-	for i in range(all_zombies_2d[lane].size()-1,-1,-1) :
-		if is_instance_valid(all_zombies_2d[lane][i]):
-			# 当前接受爆炸伤害的普通僵尸，继续沿用其原有灰烬与删除规则。
-			var zombie:Zombie000Base = all_zombies_2d[lane][i]
-			zombie.be_bomb(1800, true)
+## [param attack_value] 本次辣椒基础伤害，来自正式辣椒组件；默认1100兼容单参数事件。
+func jalapeno_bomb_lane_zombie(lane:int, attack_value:int = 1100):
+	# 灰烬连锁可能同步移除本行其他目标，必须遍历快照，不能继续按缩短后的原数组索引。
+	var targets:Array = all_zombies_2d[lane].duplicate()
+	targets.reverse()
+	for target_reference:Variant in targets:
+		if not is_instance_valid(target_reference):
+			continue
+		# 先验证可能释放的引用，再转换角色，原辣椒伤害与行筛选保持不变。
+		var zombie:Zombie000Base = target_reference as Zombie000Base
+		if not zombie.is_death and not zombie.is_queued_for_deletion():
+			zombie.be_bomb(attack_value, true)
 	# 任意行的辣椒都可命中僵王，使用专用入口检查受击窗口并保留完整死亡演出。
 	# 使用快照，某只僵王死亡不会影响其余实例遍历。
 	for boss: ZB000Base in get_living_bosses():
 		if is_instance_valid(boss):
-			boss.be_jalapeno(1800)
+			boss.be_jalapeno(attack_value)
 
 ## 三叶草吹走空中僵尸
 func blover_blow_away_in_sky_zombie():

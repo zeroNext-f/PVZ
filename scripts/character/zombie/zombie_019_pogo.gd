@@ -21,6 +21,8 @@ var speed_scale_pogo:float = 1
 var pogo_time_on_plant := 0
 ## 跳跃是否被高坚果停止
 var is_jump_stop:=false
+## 阻止大跳的高坚果弱引用；真正失去跳杆时才结算其阻跳生命代价。
+var _jump_stop_plant: WeakRef
 @export_group("动画状态")
 ## 是否为跳跳状态
 @export var is_pogo := true
@@ -72,6 +74,10 @@ func pogo_start():
 		if pogo_time_on_plant > 2:
 			pogo_time_on_plant = 0
 			if is_jump_stop:
+				# 单次从弹跳转入步行时通知阻跳者；仅进入其范围不消耗高坚果生命。
+				var blocker: Plant024TallNut = _jump_stop_plant.get_ref() as Plant024TallNut if _jump_stop_plant != null else null
+				if is_instance_valid(blocker):
+					blocker.on_jump_blocked(self)
 				loss_iron_item()
 				return
 			else:
@@ -106,5 +112,7 @@ func _on_update_speed(speed_factor_product:float):
 		tween_pogo.set_speed_scale(speed_scale_pogo)
 
 ## 跳跃被强行停止,高坚果调用
-func jump_be_stop(_plant:Plant000Base):
+## [param plant] 记录阻止大跳的高坚果，供实际失去跳杆时结算一次阻跳代价。
+func jump_be_stop(plant:Plant000Base):
 	is_jump_stop = true
+	_jump_stop_plant = weakref(plant)

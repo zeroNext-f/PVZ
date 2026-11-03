@@ -49,7 +49,7 @@ func _bomb_all_enemy():
 		if not _can_bomb_character(target):
 			continue
 		if target is ZB000Base:
-			target.be_attacked_bullet(bomb_value, BulletRegistry.AttackMode.Penetration, false, false)
+			target.be_bomb(bomb_value, is_cherry_bomb)
 		elif target is Zombie000Base:
 			# 取足以清空当前本体和所有防具的伤害，不受小体型目标的生命加成限制。
 			var damage: int = target.hp_component.get_all_hp() \

@@ -103,7 +103,7 @@ scale = Vector2(0.774038, 0.608428)
 texture = ExtResource("3_se5o2")
 
 [node name="HpComponent" parent="." index="3"]
-max_hp = 8000
+max_hp = 12000
 
 [node name="BlinkComponent" parent="." index="5"]
 all_blink_body_change = Array[ExtResource("6_lgypc")]([SubResource("Resource_6hwhb")])
@@ -120,7 +120,7 @@ parameters/TimeScale/scale = 1.0
 
 [node name="HpStageChangeComponent" type="Node2D" parent="." index="10" unique_id=1209532543]
 script = ExtResource("5_ecgny")
-boundary_value_hp = Array[int]([5332, 2666, 0])
+boundary_value_hp = Array[int]([8000, 4000, 0])
 body_change = Array[ExtResource("6_lgypc")]([SubResource("Resource_sum7j"), SubResource("Resource_hev76"), null])
 
 [node name="Area2DStopJump" type="Area2D" parent="." index="11" unique_id=1115883712]

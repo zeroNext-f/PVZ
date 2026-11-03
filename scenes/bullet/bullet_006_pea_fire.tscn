@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3 uid="uid://bcxyf4gwcdqnx"]
+[gd_scene load_steps=21 format=3 uid="uid://bcxyf4gwcdqnx"]
 
 [ext_resource type="PackedScene" uid="uid://cit8bsc5op7f0" path="res://scenes/bullet/bullet_000_linear_base.tscn" id="1_oflek"]
 [ext_resource type="Script" uid="uid://tt4tir4q0tv4" path="res://scripts/bullet/bullet_006_pea_fire.gd" id="2_rm55x"]
@@ -15,7 +15,6 @@
 [ext_resource type="Texture2D" uid="uid://cyxid1u6gds6f" path="res://assets/reanim/fire8.png" id="13_oh6ci"]
 [ext_resource type="Texture2D" uid="uid://cgr7dqab5jusn" path="res://assets/reanim/fire1.png" id="14_uu8oo"]
 [ext_resource type="Texture2D" uid="uid://dawptb0j1rwae" path="res://assets/reanim/fire3.png" id="15_4q51t"]
-[ext_resource type="Script" uid="uid://kr4r24a1l80x" path="res://scripts/bullet/component/spatter_component.gd" id="16_nb40j"]
 
 [sub_resource type="Animation" id="Animation_dty4y"]
 length = 2.0
@@ -968,8 +967,6 @@ _data = {
 &"fire_flame": SubResource("Animation_jw1jd")
 }
 
-[sub_resource type="CircleShape2D" id="CircleShape2D_plqwd"]
-radius = 21.0238
 
 [node name="Bullet006PeaFire" instance=ExtResource("1_oflek")]
 script = ExtResource("2_rm55x")
@@ -1041,13 +1038,3 @@ visible = false
 libraries = {
 &"": SubResource("AnimationLibrary_gvium")
 }
-
-[node name="SpatterComponent" type="Node2D" parent="." index="4"]
-script = ExtResource("16_nb40j")
-
-[node name="Area2DSpatter" type="Area2D" parent="SpatterComponent" index="0"]
-collision_layer = 8
-collision_mask = 512
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="SpatterComponent/Area2DSpatter" index="0"]
-shape = SubResource("CircleShape2D_plqwd")

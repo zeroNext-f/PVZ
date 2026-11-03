@@ -389,7 +389,6 @@ size = Vector2(80, 5)
 
 [node name="Plant018Squash" unique_id=1518250667 node_paths=PackedStringArray("node2d_detect_in_slope") instance=ExtResource("1_2veis")]
 script = ExtResource("2_rin1p")
-can_attack_plant_status = 5
 can_attack_zombie_status = 5
 is_attack = false
 is_right = true
@@ -453,6 +452,7 @@ parameters/TimeScale/scale = 0.75
 [node name="DetectComponent" type="Node2D" parent="." index="11" unique_id=1832434347]
 visible = false
 script = ExtResource("11_kh2ri")
+is_enable_default = false
 is_detect_attack = true
 can_attack_plant_status = 13
 can_attack_zombie_status = 5
@@ -461,6 +461,7 @@ can_attack_zombie_status = 5
 position = Vector2(0, -25)
 collision_layer = 0
 collision_mask = 4
+monitoring = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="DetectComponent/Area2D" index="0" unique_id=181732191]
 shape = SubResource("RectangleShape2D_xoecu")

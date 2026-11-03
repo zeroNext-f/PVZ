@@ -89,8 +89,14 @@ func _physics_process(_delta:float) -> void:
 			or candidate.character_init_type != E_CharacterInitType.IsNorm:
 			continue
 		if candidate is Zombie000Base:
+			# 大体型不参与冲刺接触排序，不能挡住同区域内可顶飞目标，也不能消耗顶飞机会。
+			if candidate.zombie_body_size == BodySize.Large:
+				continue
 			# 魅惑冲刺只撞敌方僵尸，且不受此前敌方阶段是否已经顶飞过的限制。
 			if is_hypno and candidate.is_hypno:
+				continue
+			# 魅惑后的直接冲撞沿用啃食受击状态，不能锁定水下、空中等原本不可啃食目标。
+			if is_hypno and not attack_component.detect_component._judge_enemy_is_can_be_attack(candidate):
 				continue
 			if not is_hypno and _has_launched_zombies:
 				continue
@@ -119,11 +125,11 @@ func _physics_process(_delta:float) -> void:
 			_launch_first_zombie_cell(nearest as Zombie000Base)
 
 
-## [param cell] 接触格；按保护层优先只选择一株，不把6000伤害分发到整格。
+## [param cell] 接触格；先按啃食资格筛选，再按原保护层规则只选一株，不把6000伤害分发到整格。
 func _first_plant(cell:PlantCell) -> Plant000Base:
 	if not is_instance_valid(cell):
 		return null
-	# 冲撞允许接触底座及地刺，普通啃食检测不随之放宽。
+	# 复用啃食的状态与梯子规则；裸地地刺不合格，花盆可作为合格检测对象选中其上的地刺。
 	for place:CharacterRegistry.PlacePlantInCell in [CharacterRegistry.PlacePlantInCell.Shell,
 		CharacterRegistry.PlacePlantInCell.Norm, CharacterRegistry.PlacePlantInCell.Imitater,
 		CharacterRegistry.PlacePlantInCell.Down, CharacterRegistry.PlacePlantInCell.Float]:
@@ -134,13 +140,22 @@ func _first_plant(cell:PlantCell) -> Plant000Base:
 		# 已确认引用有效的候选植物。
 		var plant: Plant000Base = plant_reference as Plant000Base
 		if plant != null and not plant.is_death and not plant.is_queued_for_deletion() \
-			and is_instance_valid(plant.hurt_box_component) and plant.hurt_box_component.is_enabling:
-			return plant
+			and not plant.hp_component.is_death \
+			and is_instance_valid(plant.hurt_box_component) and plant.hurt_box_component.is_enabling \
+			and attack_component.detect_component._judge_enemy_is_can_be_attack(plant):
+			# 与啃食一致，花盆等底座合格后仍优先命中同格外层植物，不能对重选结果再按地刺状态排除。
+			var target: Plant000Base = attack_component.detect_component.get_first_be_hit_plant_in_cell(plant)
+			if is_instance_valid(target) and not target.is_death and not target.is_queued_for_deletion() \
+				and not target.hp_component.is_death and is_instance_valid(target.hurt_box_component) \
+				and target.hurt_box_component.is_enabling:
+				return target
 	return null
 
 
 ## [param target] 首次接触的僵尸；按所在虚拟格分组，场外也不把所有单位挤到边缘一格。
 func _launch_first_zombie_cell(target:Zombie000Base) -> void:
+	if not is_instance_valid(target) or target.zombie_body_size == BodySize.Large:
+		return
 	# 本路植物格数组用于读取实际格距，兼容前院、泳池和屋顶。
 	var cells:Array = Global.main_game.plant_cell_manager.all_plant_cells[lane]
 	if cells.size() < 2:
@@ -153,16 +168,17 @@ func _launch_first_zombie_cell(target:Zombie000Base) -> void:
 		return
 	var column:int = floori((target.global_position.x - left_center) / pitch + 0.5)
 	var displacement:float = -direction_x_root * pitch * LAUNCH_CELLS
-	_has_launched_zombies = true
 	# 行节点包含普通和魅惑实例，不以阵营过滤整格效果。
 	for child:Node in Global.main_game.zombie_manager.all_zombie_rows[lane].get_children():
 		var zombie:Zombie000Base = child as Zombie000Base
 		if not is_instance_valid(zombie) or zombie == self or zombie.is_death \
-			or zombie.is_queued_for_deletion() or zombie.hp_component.is_death:
+			or zombie.is_queued_for_deletion() or zombie.hp_component.is_death or zombie.zombie_body_size == BodySize.Large:
 			continue
 		var zombie_column:int = floori((zombie.global_position.x - left_center) / pitch + 0.5)
 		if zombie_column == column:
-			zombie.start_football_launch(displacement)
+			# 只有真正启动至少一只合格僵尸的顶飞才消耗次数，全部拒绝时继续保留。
+			if zombie.start_football_launch(displacement):
+				_has_launched_zombies = true
 
 
 ## [param target] 只锁定最初接触的植物或敌方僵尸；立即停步并播放前扑、定格和收势。

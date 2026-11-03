@@ -44,7 +44,7 @@ advance_expression = "is_zombie"
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_0g3ak"]
 switch_mode = 2
 advance_mode = 2
-advance_expression = "not is_water"
+advance_expression = "not is_water and not is_zombie"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_hjt5v"]
 advance_mode = 2
@@ -61,7 +61,7 @@ advance_expression = "is_zombie"
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_8b71b"]
 switch_mode = 2
 advance_mode = 2
-advance_expression = "is_water"
+advance_expression = "is_water and not is_zombie"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_85o48"]
 advance_mode = 2
@@ -69,7 +69,7 @@ advance_expression = "not is_water"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_lam7n"]
 advance_mode = 2
-advance_expression = "not is_water"
+advance_expression = "not is_water and not is_zombie"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_baiuf"]
 advance_mode = 2

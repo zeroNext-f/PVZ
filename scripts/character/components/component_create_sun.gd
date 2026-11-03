@@ -112,7 +112,8 @@ func spawn_suns(count: int, value: int, notify_production: bool = true) -> void:
 		tween.tween_property(new_sun, "position:y", center_y, 0.3).as_relative().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		tween.tween_property(new_sun, "position:y", target_y, 0.6).as_relative().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
-		new_sun.spawn_sun_tween = get_tree().create_tween()
+		# 总出生动画与纵向子动画均绑定阳光，避免离场后触发自动收集。
+		new_sun.spawn_sun_tween = new_sun.create_tween()
 		new_sun.spawn_sun_tween.set_parallel()
 		new_sun.spawn_sun_tween.tween_subtween(tween)
 		new_sun.spawn_sun_tween.tween_property(new_sun, "position:x", randf_range(-30, 30), 0.9).as_relative()

@@ -33,6 +33,19 @@ var all_timer:Dictionary[E_TimerType, Timer] = {
 #endregion
 
 #region 基础属性
+## 烧灼状态；赋予前解除寒冰减速/冻结，保留旧字段供大喷菇共享，连锁由BurningState结算。
+var has_burning_placeholder:bool = false:
+	set(value):
+		if value and not can_receive_abnormal_status():
+			return
+		# 所有来源（含大喷菇直接赋值）统一解除寒冰；重复赋烧灼也不能保留寒冰状态。
+		if value:
+			cancel_ice()
+		if has_burning_placeholder == value:
+			return
+		has_burning_placeholder = value
+		if is_node_ready():
+			BurningState.refresh_visual(self)
 
 ## 角色实际方向改变时,body方向为角色实际方向基础的body方向
 @export_group("角色方向")
@@ -134,6 +147,8 @@ func _ready() -> void:
 			ready_show()
 		E_CharacterInitType.IsGarden:
 			ready_garden()
+	if has_burning_placeholder:
+		BurningState.refresh_visual(self)
 
 ## 初始化正常出战角色信号连接
 func ready_norm_signal_connect():
@@ -213,6 +228,7 @@ func death_language():
 ## 角色死亡,子类继承重写
 func character_death():
 	is_death = true
+	BurningState.clear_visual(self)
 	signal_character_death.emit()
 	#call_deferred("emit_signal", "signal_character_death")
 	if is_can_death_language:
@@ -262,8 +278,14 @@ func be_zombie_eat(attack_value:int, _attack_zombie:Zombie000Base):
 func be_zombie_eat_once(_attack_zombie:Zombie000Base):
 	body.body_light()
 
-## 被魅惑
+## 返回是否可被赋予异常状态；普通角色默认允许，载具通过僵尸基类免疫配置统一拒绝。
+func can_receive_abnormal_status() -> bool:
+	return true
+
+## 被魅惑；专属僵尸入口还会检查体型，基础入口也保留异常免疫保护。
 func be_hypno():
+	if not can_receive_abnormal_status():
+		return
 	is_hypno = true
 	signal_character_be_hypno.emit()
 	update_direction_x_root(-1)
@@ -277,6 +299,10 @@ func be_hypno():
 func be_flattened_from_enemy(_character:Character000Base):
 	be_flattened()
 
+## [param character] 发起行进碾压的角色；默认沿用压扁入口，高坚果可单独反制而不免疫巨人砸扁。
+func be_crushed_from_enemy(character: Character000Base) -> void:
+	be_flattened_from_enemy(character)
+
 ## 植物被压扁，无敌人(罐子压扁)
 func be_flattened():
 	body.be_flattened_body()
@@ -288,8 +314,11 @@ func be_flattened():
 
 #region 速度修改相关
 ## 被冰冻减速
-## [param time] 本次冰冻减速持续时间，单位为秒。
+## [param time] 本次冰冻减速持续时间，单位为秒；成功施加前清除烧灼及其高亮/持续火焰。
 func be_ice_decelerate(time:float):
+	if not can_receive_abnormal_status():
+		return
+	has_burning_placeholder = false
 	update_speed_factor(0.5, E_Influence_Speed_Factor.IceDecelerateSpeed)
 	body.set_other_color(BodyCharacter.E_ChangeColors.IceColor, Color(0.5, 1, 1))
 	if not is_instance_valid(all_timer[E_TimerType.IceDecelerate]):
@@ -321,8 +350,11 @@ func be_snow_pea_frozen(time:float):
 func _apply_ice_freeze(time:float, new_time_ice_end_decelerate:float, apply_freeze_damage:bool):
 	if apply_freeze_damage:
 		hp_component.Hp_loss(20,BulletRegistry.AttackMode.Real, true, false)
-	if is_death or is_queued_for_deletion():
+	# 免疫只阻止异常状态，通用冻结攻击原有20点直接伤害仍按原规则结算。
+	if is_death or is_queued_for_deletion() or not can_receive_abnormal_status():
 		return
+	# 冰川菇、寒冰豌豆及大喷菇扩散共用此处，冻结开始即撤销烧灼，不影响攻击原有直接伤害。
+	has_burning_placeholder = false
 
 	# 已有其他来源冻结时保留其解冻减速，不被寒冰豌豆的零尾效覆盖。
 	if is_instance_valid(all_timer[E_TimerType.IceFreeze]) and all_timer[E_TimerType.IceFreeze].time_left > 0.0:
@@ -354,15 +386,24 @@ func _on_ice_freeze_timer_timeout() -> void:
 	elif influence_speed_factors.get(E_Influence_Speed_Factor.IceDecelerateSpeed, 1.0) >= 1.0:
 		body.set_other_color(BodyCharacter.E_ChangeColors.IceColor, Color.WHITE)
 
-## 取消冰冻减速(火焰豌豆\辣椒)
+## 直接解除冻结、减速及解冻尾效，供烧灼赋予和辣椒调用；不通过自然解冻回调重新施加减速。
 func cancel_ice():
-	if is_instance_valid(all_timer[E_TimerType.IceFreeze]) and all_timer[E_TimerType.IceFreeze].time_left != 0:
+	# 保存实际速度影响，避免重复点燃时无意义地广播速度变化。
+	var was_frozen:bool = influence_speed_factors.get(E_Influence_Speed_Factor.IceFreezeSpeed, 1.0) < 1.0
+	var was_slowed:bool = influence_speed_factors.get(E_Influence_Speed_Factor.IceDecelerateSpeed, 1.0) < 1.0
+	if is_instance_valid(all_timer[E_TimerType.IceFreeze]):
 		all_timer[E_TimerType.IceFreeze].stop()
-		_on_ice_freeze_timer_timeout()
-		if is_instance_valid(ice_effect):
-			ice_effect.queue_free()
-	if is_instance_valid(all_timer[E_TimerType.IceDecelerate]) and all_timer[E_TimerType.IceDecelerate].time_left != 0:
+	if is_instance_valid(all_timer[E_TimerType.IceDecelerate]):
 		all_timer[E_TimerType.IceDecelerate].stop()
-		_on_ice_decelerate_timer_timeout()
+	time_ice_end_decelerate = 0.0
+	if was_frozen:
+		update_speed_factor(1.0, E_Influence_Speed_Factor.IceFreezeSpeed)
+	if was_slowed:
+		update_speed_factor(1.0, E_Influence_Speed_Factor.IceDecelerateSpeed)
+	if was_frozen or was_slowed:
+		body.set_other_color(BodyCharacter.E_ChangeColors.IceColor, Color.WHITE)
+	if is_instance_valid(ice_effect):
+		ice_effect.queue_free()
+		ice_effect = null
 
 #endregion

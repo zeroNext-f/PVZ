@@ -36,6 +36,14 @@ func be_attacked_bullet(attack_value: int, bullet_mode: BulletRegistry.AttackMod
 	super.be_attacked_bullet(attack_value, bullet_mode, is_drop, trigger_be_attack_SFX)
 
 
+## [param attack_value] 爆炸基础伤害；[param is_cherry_bomb] 标记灰烬来源，供已烧灼目标的连锁使用。
+## 仍通过既有受击窗口及状态机处理，不套用普通僵尸的直接删除或化灰表现。
+func be_bomb(attack_value:int, is_cherry_bomb:bool = false) -> void:
+	# 未实际扣血时finish_hit不会排入后方连锁。
+	var burning_hit:Dictionary = BurningState.capture_hit(self) if is_cherry_bomb else {}
+	be_attacked_bullet(attack_value, BulletRegistry.AttackMode.Penetration, false, false)
+	BurningState.finish_hit(burning_hit)
+
 ## 先发出原有死亡信号供管理器扣数，再关闭受击；重复调用不重复触发亡语或计数。
 func character_death() -> void:
 	if is_death:
@@ -111,9 +119,12 @@ func be_ice_freeze(time: float, new_time_ice_end_decelerate: float) -> void:
 func be_jalapeno(attack_value: int) -> void:
 	if not _can_receive_damage():
 		return
+	# 辣椒是灰烬来源；只增加烧灼连锁观察，不改变原解冻和僵王受击窗口。
+	var burning_hit:Dictionary = BurningState.capture_hit(self)
 	# 先解除控制再结算伤害，避免解冻回调覆盖随后启动的死亡演出速度。
 	cancel_ice()
 	hp_component.Hp_loss(attack_value, BulletRegistry.AttackMode.Penetration, false, false)
+	BurningState.finish_hit(burning_hit)
 
 
 ## 死亡动画和直接消失共用请求入口，不直接创建奖杯；存活、展示和正在卸载的角色不能请求奖励。

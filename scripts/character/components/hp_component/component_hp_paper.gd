@@ -2,7 +2,7 @@
 extends HpComponentZombie
 class_name HpComponentPaper
 
-## 致死来源；Crush 仅预留，现有倭瓜入口不接入。
+## 致死来源；窝瓜使用 Crush 碾压，独立于普通和灰烬来源参与第二生命抗性。
 enum DamageKind { Normal, Ash, Crush }
 ## 第一生命、破报过渡、第二生命。
 enum LifePhase { First, Reaction, Second }

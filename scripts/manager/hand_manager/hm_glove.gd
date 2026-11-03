@@ -1,4 +1,4 @@
-## 与铲子同属手持道具，选择原植物并在合法目标格完成实例迁移。
+## 与铲子同属手持道具，合法空位迁移原实例，支持同格补种的同种目标则触发原补种流程。
 extends Node
 class_name HMGlove
 
@@ -86,7 +86,7 @@ func click_cell(cell:PlantCell) -> bool:
 		return false
 	if not BattlePlantMover.can_move(carried_plant, cell):
 		return true
-	# 格子按钮回调在空闲帧执行，迁移后才开始冷却。
+	# 格子按钮回调在空闲帧执行，迁移或同种补种成功后才开始冷却。
 	if BattlePlantMover.move(carried_plant, cell):
 		ui_glove.start_cooldown()
 		SoundManager.play_other_SFX("plant2")

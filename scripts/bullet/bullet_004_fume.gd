@@ -79,11 +79,15 @@ func _resolve_spread() -> void:
 			continue
 		# 存活的本次命中目标，不要求它此时仍与喷雾同阵营敌对。
 		var zombie:Zombie000Base = value as Zombie000Base
+		# 载具全异常免疫同时拒绝魅惑、烧灼、寒冰、剧毒和黄油，不允许直接字段赋值绕过。
+		if not zombie.can_receive_abnormal_status():
+			continue
 		if _spread_states.has(SpreadState.Hypno):
-			if not zombie.is_hypno:
+			if not zombie.is_hypno and zombie.can_be_hypnotized():
 				zombie.be_hypno()
 			continue
 		if _spread_states.has(SpreadState.Burning):
+			# 多目标采样仍保留烧灼>冻结>减速；具体相斥清理由共用状态入口执行。
 			zombie.has_burning_placeholder = true
 		elif _spread_states.has(SpreadState.Freeze):
 			zombie.be_snow_pea_frozen(float(_spread_states[SpreadState.Freeze]) + ICE_SPREAD_BONUS_SECONDS)

@@ -8,8 +8,8 @@ class_name CardSlotNorm
 @onready var card_slot_candidate: CardSlotCandidate = $CardSlotCandidate
 ## 出战卡槽及阳光结算节点。
 @onready var card_slot_battle: CardSlotBattle = $CardSlotBattle
-## 最近选中且尚未配对的墓碑吞噬者，下一次成功的新选卡填入它的下层。
-var _pending_grave_slot: Card
+## 最近选中且尚未配对的墓碑吞噬者或莲叶，下一次成功的新选卡填入它的下层。
+var _pending_shared_slot: Card
 ## 关卡配置的不可取消预选实例；与玩家的“已选择”状态分别记录。
 var _locked_cards: Array[Card] = []
 ## 每张卡当前的移动补间；快速取消/重排时替换旧目标，防止旧回调将卡移回错误槽位。
@@ -30,11 +30,11 @@ func init_card_slot_norm(game_para: ResourceLevelData) -> void:
 ## 读取上次的统一选卡引用，只恢复仍可出战且存在于本次候选页的内容。
 func _on_re_card_button_pressed() -> void:
 	Global.save_service.load_selected_cards()
-	# 存档明确记录配对关系，避免未配对的墓碑卡误吞后面本来独立的槽位。
+	# 存档明确记录配对关系，避免未配对的共用根卡误吞后面本来独立的槽位。
 	var restore_root: Card = null
 	# 上次选卡的引用只读，候选卡拥有自己的引用副本。
 	for reference: ResourceCardReference in Global.global_game_state.selected_cards:
-		_pending_grave_slot = restore_root
+		_pending_shared_slot = restore_root
 		restore_root = null
 		if not AllCards.is_battle_card(reference):
 			continue
@@ -54,7 +54,7 @@ func _on_re_card_button_pressed() -> void:
 					restore_root = slot_card
 					break
 	if is_instance_valid(restore_root):
-		_pending_grave_slot = restore_root
+		_pending_shared_slot = restore_root
 
 ## 倒序单独取消所有实际卡片；系统锁定预选保持不变。
 func _on_cancal_card_button_pressed() -> void:
@@ -76,7 +76,7 @@ func _on_texture_button_pressed() -> void:
 		reference.shares_slot_with_next = is_instance_valid(card.shared_slot_partner)
 		Global.global_game_state.selected_cards.append(reference)
 		if is_instance_valid(card.shared_slot_partner):
-			# 下层不再携带下一层关系，即使其自身也是模仿墓碑卡，仍只组成双卡槽。
+			# 下层不再携带下一层关系，即使其自身也是可共用槽的植物卡，仍只组成双卡槽。
 			var partner_reference: ResourceCardReference = card.shared_slot_partner.card_reference.copy_reference()
 			partner_reference.shares_slot_with_next = false
 			Global.global_game_state.selected_cards.append(partner_reference)
@@ -89,7 +89,7 @@ func init_pre_choosed_card(references: Array[ResourceCardReference]) -> void:
 		if not AllCards.is_battle_card(reference):
 			push_error("CardSlotNorm：预选卡必须是已注册的出战卡牌。")
 			continue
-		if not _has_pending_grave_slot() and card_slot_battle.curr_cards.size() >= card_slot_battle.cards_placeholder.size():
+		if not _has_pending_shared_slot() and card_slot_battle.curr_cards.size() >= card_slot_battle.cards_placeholder.size():
 			break
 		# 隐藏对应的候选卡，保持预选卡不可取消。
 		var container: CardCandidateContainer = card_slot_candidate.get_candidate(reference)
@@ -134,20 +134,20 @@ func _on_imitater_card_click(card: Card) -> void:
 	else:
 		card_slot_candidate.imitater_be_choosed()
 
-## 返回是否有仍在槽中的未配对墓碑卡；满槽时也允许补选它的下层。
-func _has_pending_grave_slot() -> bool:
-	return is_instance_valid(_pending_grave_slot) and card_slot_battle.curr_cards.has(_pending_grave_slot) \
-		and not is_instance_valid(_pending_grave_slot.shared_slot_partner)
+## 返回是否有仍在槽中的未配对共用根卡；满槽时也允许补选它的下层。
+func _has_pending_shared_slot() -> bool:
+	return is_instance_valid(_pending_shared_slot) and card_slot_battle.curr_cards.has(_pending_shared_slot) \
+		and not is_instance_valid(_pending_shared_slot.shared_slot_partner)
 
 ## [param card] 新选择的卡，[param animate] 为false时直接挂载系统预选；成功只占一个物理槽。
 func _add_selected_card(card: Card, animate: bool = true) -> bool:
 	# 本次放置的物理占位，不以展开后的卡牌数量计算容量。
 	var target_slot: Control
-	if _has_pending_grave_slot():
-		_pending_grave_slot.shared_slot_partner = card
-		card.shared_slot_owner = _pending_grave_slot
-		target_slot = card_slot_battle.cards_placeholder[card_slot_battle.curr_cards.find(_pending_grave_slot)]
-		_pending_grave_slot = null
+	if _has_pending_shared_slot():
+		_pending_shared_slot.shared_slot_partner = card
+		card.shared_slot_owner = _pending_shared_slot
+		target_slot = card_slot_battle.cards_placeholder[card_slot_battle.curr_cards.find(_pending_shared_slot)]
+		_pending_shared_slot = null
 		card.shared_slot_active = false
 		card.hide()
 	else:
@@ -155,9 +155,8 @@ func _add_selected_card(card: Card, animate: bool = true) -> bool:
 			return false
 		card_slot_battle.curr_cards.append(card)
 		target_slot = card_slot_battle.cards_placeholder[card_slot_battle.curr_cards.size() - 1]
-		if card.card_reference.card_type == ResourceCardReference.CardType.Plant \
-			and card.card_reference.content_id == CharacterRegistry.PlantType.P012GraveBuster:
-			_pending_grave_slot = card
+		if card.card_reference.can_share_slot_with_next():
+			_pending_shared_slot = card
 	card.is_choosed_pre_card = true
 	if animate:
 		move_card_to(card, target_slot)
@@ -165,7 +164,7 @@ func _add_selected_card(card: Card, animate: bool = true) -> bool:
 		pre_choosed_card(card, target_slot)
 	return true
 
-## [param card] 仅取消该卡；取消墓碑根卡时下层晋升独立槽位，取消下层时保留墓碑根卡。
+## [param card] 仅取消该卡；取消共用根卡时下层晋升独立槽位，取消下层时保留共用根卡。
 func _cancel_selected_card(card: Card) -> void:
 	if not is_instance_valid(card) or not card.is_choosed_pre_card:
 		return
@@ -184,7 +183,7 @@ func _cancel_selected_card(card: Card) -> void:
 		_detach_partner(card.shared_slot_owner)
 		return
 	if is_instance_valid(card.shared_slot_partner):
-		# 保留同一物理槽，将下层实际实例提升；只把墓碑吞噬者归还角色池。
+		# 保留同一物理槽，将下层实际实例提升；只把原共用根卡归还角色池。
 		var partner: Card = card.shared_slot_partner
 		# 原根卡的物理槽号，提升后容量与后续槽序均不改变。
 		var slot_index: int = card_slot_battle.curr_cards.find(card)
@@ -193,21 +192,20 @@ func _cancel_selected_card(card: Card) -> void:
 		partner.shared_slot_active = true
 		partner.show()
 		card_slot_battle.curr_cards[slot_index] = partner
-		if _pending_grave_slot == card:
-			_pending_grave_slot = null
-		if partner.card_reference.card_type == ResourceCardReference.CardType.Plant \
-			and partner.card_reference.content_id == CharacterRegistry.PlantType.P012GraveBuster:
-			_pending_grave_slot = partner
+		if _pending_shared_slot == card:
+			_pending_shared_slot = null
+		if partner.card_reference.can_share_slot_with_next():
+			_pending_shared_slot = partner
 		_return_candidate(card)
 		move_card_to(partner, card_slot_battle.cards_placeholder[slot_index])
 		return
-	if _pending_grave_slot == card:
-		_pending_grave_slot = null
+	if _pending_shared_slot == card:
+		_pending_shared_slot = null
 	card_slot_battle.curr_cards.erase(card)
 	_return_candidate(card)
 	_relayout_slots()
 
-## [param root_card] 仍保留的墓碑槽位根；解除可取消下层后等待下一次新选卡。
+## [param root_card] 仍保留的共用槽位根；解除可取消下层后等待下一次新选卡。
 func _detach_partner(root_card: Card) -> void:
 	# 原下层实例独立归还，根卡不移动、不丢失自己的卡片身份。
 	var partner: Card = root_card.shared_slot_partner
@@ -218,7 +216,7 @@ func _detach_partner(root_card: Card) -> void:
 	partner.shared_slot_active = true
 	root_card.set_shared_slot_layer(false)
 	_return_candidate(partner)
-	_pending_grave_slot = root_card
+	_pending_shared_slot = root_card
 
 ## [param card] 已取消的实际卡牌，回原候选位置并恢复模仿者入口。
 func _return_candidate(card: Card) -> void:

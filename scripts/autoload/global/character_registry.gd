@@ -157,7 +157,8 @@ enum ZombieInfoAttribute{
 #region 植物种植信息
 ## 紫卡植物种植前置植物
 @export var AllPrePlantPurple:Dictionary[PlantType, PlantType]= {
-	PlantType.P041GatlingPea:PlantType.P008PeaShooterDouble,
+	PlantType.P024TallNut:PlantType.P004WallNut,
+	PlantType.P041GatlingPea:PlantType.P001PeaShooterSingle,
 	PlantType.P042TwinSunFlower:PlantType.P002SunFlower,
 	PlantType.P043GloomShroom:PlantType.P011FumeShroom,
 	PlantType.P044Cattail:PlantType.P017LilyPad,
@@ -284,7 +285,7 @@ const PlantInfo = {
 	PlantType.P017LilyPad: {
 		PlantInfoAttribute.PlantName: "LilyPad",
 		PlantInfoAttribute.CoolTime: 7.5,
-		PlantInfoAttribute.SunCost: 25,
+		PlantInfoAttribute.SunCost: 0,
 		PlantInfoAttribute.PlantConditionResource : preload("res://resources/character_resource/plant_condition/017_lily_pad.tres"),
 		PlantInfoAttribute.PlantScenes : preload("res://scenes/character/plant/plant_017_lily_pad.tscn")
 		},
@@ -298,15 +299,15 @@ const PlantInfo = {
 	PlantType.P019ThreePeater: {
 		PlantInfoAttribute.PlantName: "ThreePeater",
 		PlantInfoAttribute.CoolTime: 7.5,
-		PlantInfoAttribute.SunCost: 325,
+		PlantInfoAttribute.SunCost: 225,
 		PlantInfoAttribute.PlantConditionResource : preload("res://resources/character_resource/plant_condition/000_common_plant_land.tres"),
 		PlantInfoAttribute.PlantScenes : preload("res://scenes/character/plant/plant_019_three_peater.tscn")
 		},
 	PlantType.P020TangleKelp: {
 		PlantInfoAttribute.PlantName: "TangleKelp",
 		PlantInfoAttribute.CoolTime: 30.0,
-		PlantInfoAttribute.SunCost: 25,
-		PlantInfoAttribute.PlantConditionResource : preload("res://resources/character_resource/plant_condition/020_tanglekelp.tres"),
+		PlantInfoAttribute.SunCost: 50,
+		PlantInfoAttribute.PlantConditionResource : preload("res://resources/character_resource/plant_condition/020_tanglekelp_replant.tres"),
 		PlantInfoAttribute.PlantScenes : preload("res://scenes/character/plant/plant_020_tanglekelp.tscn")
 		},
 	PlantType.P021Jalapeno: {
@@ -319,7 +320,7 @@ const PlantInfo = {
 	PlantType.P022Caltrop: {
 		PlantInfoAttribute.PlantName: "Caltrop",
 		PlantInfoAttribute.CoolTime: 7.5,
-		PlantInfoAttribute.SunCost: 125,
+		PlantInfoAttribute.SunCost: 75,
 		PlantInfoAttribute.PlantConditionResource : preload("res://resources/character_resource/plant_condition/022_caltrop.tres"),
 		PlantInfoAttribute.PlantScenes : preload("res://scenes/character/plant/plant_022_caltrop.tscn")
 		},
@@ -333,8 +334,8 @@ const PlantInfo = {
 	PlantType.P024TallNut: {
 		PlantInfoAttribute.PlantName: "TallNut",
 		PlantInfoAttribute.CoolTime: 30.0,
-		PlantInfoAttribute.SunCost: 175,
-		PlantInfoAttribute.PlantConditionResource : preload("res://resources/character_resource/plant_condition/000_common_plant_land.tres"),
+		PlantInfoAttribute.SunCost: 125,
+		PlantInfoAttribute.PlantConditionResource : preload("res://resources/character_resource/plant_condition/024_tall_nut.tres"),
 		PlantInfoAttribute.PlantScenes : preload("res://scenes/character/plant/plant_024_tall_nut.tscn")
 		},
 
@@ -454,8 +455,8 @@ const PlantInfo = {
 
 	PlantType.P041GatlingPea: {
 		PlantInfoAttribute.PlantName: "GatlingPea",
-		PlantInfoAttribute.CoolTime: 50.0,
-		PlantInfoAttribute.SunCost: 250,
+		PlantInfoAttribute.CoolTime: 7.5,
+		PlantInfoAttribute.SunCost: 275,
 		PlantInfoAttribute.PlantConditionResource : preload("res://resources/character_resource/plant_condition/000_common_purple.tres"),
 		PlantInfoAttribute.PlantScenes : preload("res://scenes/character/plant/plant_041_gatling_pea.tscn")
 		},
@@ -463,7 +464,7 @@ const PlantInfo = {
 	PlantType.P042TwinSunFlower: {
 		PlantInfoAttribute.PlantName: "TwinSunFlower",
 		PlantInfoAttribute.CoolTime: 50.0,
-		PlantInfoAttribute.SunCost: 150,
+		PlantInfoAttribute.SunCost: 0,
 		PlantInfoAttribute.PlantConditionResource : preload("res://resources/character_resource/plant_condition/000_common_purple.tres"),
 		PlantInfoAttribute.PlantScenes : preload("res://scenes/character/plant/plant_042_twin_sun_flower.tscn")
 		},
@@ -784,7 +785,7 @@ const ZombieSpawnPower: Dictionary[ZombieType, int] = {
 	ZombieType.Z010Dancer: 1,		# 伴舞战力
 
 	ZombieType.Z012Snorkle: 3,		# 潜水
-	ZombieType.Z013Zamboni: 7,		# 冰车
+	ZombieType.Z013Zamboni: 5,		# 雪橇车僵尸单只出怪量消耗
 	ZombieType.Z014Bobsled: 3,		# 滑雪四兄弟
 	ZombieType.Z015Dolphinrider: 3,# 海豚僵尸
 
@@ -816,7 +817,7 @@ const ZombieSpawnWeights: Dictionary[ZombieType, int] = {
 	ZombieType.Z010Dancer: 4000,		# 伴舞权重
 
 	ZombieType.Z012Snorkle: 2000,		# 潜水
-	ZombieType.Z013Zamboni: 2000,		# 冰车
+	ZombieType.Z013Zamboni: 1900,		# 雪橇车僵尸全局出怪权重
 	ZombieType.Z014Bobsled: 2000,		# 滑雪四兄弟
 	ZombieType.Z015Dolphinrider: 1500,	# 海豚僵尸
 

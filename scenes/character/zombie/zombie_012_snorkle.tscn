@@ -1,7 +1,8 @@
-[gd_scene load_steps=83 format=3 uid="uid://b8xlg7vtgyucv"]
+[gd_scene load_steps=84 format=3 uid="uid://b8xlg7vtgyucv"]
 
 [ext_resource type="PackedScene" uid="uid://cktksmdbn2nmn" path="res://scenes/character/zombie/zombie_000_base.tscn" id="1_ryuum"]
 [ext_resource type="Script" uid="uid://b3tkhp17e2hkg" path="res://scripts/character/zombie/zombie_012_snorkle.gd" id="2_5stlx"]
+[ext_resource type="Script" path="res://scripts/character/components/detect_component/component_detect_snorkle.gd" id="detect_snorkle"]
 [ext_resource type="Texture2D" uid="uid://b3r33mjs010cl" path="res://assets/reanim/Zombie_snorkle_innerarm_hand.png" id="2_xy7ew"]
 [ext_resource type="Texture2D" uid="uid://l18dd4u2y8yq" path="res://assets/reanim/Zombie_snorkle_innerarm_lower.png" id="3_5stlx"]
 [ext_resource type="Script" uid="uid://jl0nl4a234bc" path="res://scripts/resources/resource_body_change.gd" id="3_5y45j"]
@@ -1150,7 +1151,7 @@ advance_mode = 2
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_b2o7k"]
 advance_mode = 2
-advance_expression = "is_attack"
+advance_expression = "is_attack and not is_eating_kelp_underwater"
 
 [sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_edy5o"]
 switch_mode = 2
@@ -1186,6 +1187,10 @@ xfade_time = 0.2
 advance_mode = 2
 advance_expression = "is_death"
 
+[sub_resource type="AnimationNodeStateMachineTransition" id="Transition_underwater_kelp"]
+advance_mode = 2
+advance_expression = "is_eating_kelp_underwater"
+
 [sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_2nvqs"]
 states/End/position = Vector2(1418, 381)
 states/Start/position = Vector2(185, 2)
@@ -1205,7 +1210,7 @@ states/Zombie_snorkle_uptoeat2/node = SubResource("AnimationNodeAnimation_6sr6g"
 states/Zombie_snorkle_uptoeat2/position = Vector2(1212, 79)
 states/Zombie_snorkle_walk/node = SubResource("AnimationNodeAnimation_qft07")
 states/Zombie_snorkle_walk/position = Vector2(434, 67)
-transitions = ["Zombie_snorkle_uptoeat", "Zombie_snorkle_eat", SubResource("AnimationNodeStateMachineTransition_rsrwk"), "Zombie_snorkle_eat", "Zombie_snorkle_uptoeat2", SubResource("AnimationNodeStateMachineTransition_b8hn6"), "Zombie_snorkle_eat", "Zombie_snorkle_death", SubResource("AnimationNodeStateMachineTransition_o5fia"), "Zombie_snorkle_jumpinpool", "Zombie_snorkle_swim", SubResource("AnimationNodeStateMachineTransition_7s0wi"), "Zombie_snorkle_swim", "Zombie_snorkle_uptoeat", SubResource("AnimationNodeStateMachineTransition_b2o7k"), "Zombie_snorkle_uptoeat2", "Zombie_snorkle_swim", SubResource("AnimationNodeStateMachineTransition_edy5o"), "Start", "Zombie_snorkle_idle", SubResource("AnimationNodeStateMachineTransition_i6o78"), "Start", "Zombie_snorkle_walk", SubResource("AnimationNodeStateMachineTransition_27lus"), "Zombie_snorkle_idle", "Zombie_snorkle_walk", SubResource("AnimationNodeStateMachineTransition_uxctq"), "Zombie_snorkle_walk", "Zombie_snorkle_jumpinpool", SubResource("AnimationNodeStateMachineTransition_so1wx"), "Zombie_snorkle_swim", "Zombie_snorkle_walk", SubResource("AnimationNodeStateMachineTransition_1xf8j"), "Zombie_snorkle_jumpinpool", "Zombie_snorkle_death", SubResource("AnimationNodeStateMachineTransition_01ct7"), "Zombie_snorkle_swim", "Zombie_snorkle_death", SubResource("AnimationNodeStateMachineTransition_fxkx4")]
+transitions = ["Zombie_snorkle_uptoeat", "Zombie_snorkle_swim", SubResource("Transition_underwater_kelp"), "Zombie_snorkle_eat", "Zombie_snorkle_swim", SubResource("Transition_underwater_kelp"), "Zombie_snorkle_uptoeat", "Zombie_snorkle_eat", SubResource("AnimationNodeStateMachineTransition_rsrwk"), "Zombie_snorkle_eat", "Zombie_snorkle_uptoeat2", SubResource("AnimationNodeStateMachineTransition_b8hn6"), "Zombie_snorkle_eat", "Zombie_snorkle_death", SubResource("AnimationNodeStateMachineTransition_o5fia"), "Zombie_snorkle_jumpinpool", "Zombie_snorkle_swim", SubResource("AnimationNodeStateMachineTransition_7s0wi"), "Zombie_snorkle_swim", "Zombie_snorkle_uptoeat", SubResource("AnimationNodeStateMachineTransition_b2o7k"), "Zombie_snorkle_uptoeat2", "Zombie_snorkle_swim", SubResource("AnimationNodeStateMachineTransition_edy5o"), "Start", "Zombie_snorkle_idle", SubResource("AnimationNodeStateMachineTransition_i6o78"), "Start", "Zombie_snorkle_walk", SubResource("AnimationNodeStateMachineTransition_27lus"), "Zombie_snorkle_idle", "Zombie_snorkle_walk", SubResource("AnimationNodeStateMachineTransition_uxctq"), "Zombie_snorkle_walk", "Zombie_snorkle_jumpinpool", SubResource("AnimationNodeStateMachineTransition_so1wx"), "Zombie_snorkle_swim", "Zombie_snorkle_walk", SubResource("AnimationNodeStateMachineTransition_1xf8j"), "Zombie_snorkle_jumpinpool", "Zombie_snorkle_death", SubResource("AnimationNodeStateMachineTransition_01ct7"), "Zombie_snorkle_swim", "Zombie_snorkle_death", SubResource("AnimationNodeStateMachineTransition_fxkx4")]
 graph_offset = Vector2(291, 1)
 
 [sub_resource type="AnimationNodeTimeScale" id="AnimationNodeTimeScale_5oh13"]
@@ -1221,6 +1226,7 @@ node_connections = [&"output", 0, &"TimeScale", &"TimeScale", 0, &"StateMachine"
 [node name="Zombie012Snorkle" instance=ExtResource("1_ryuum")]
 script = ExtResource("2_5stlx")
 zombie_type = 12
+zombie_body_size = 0
 metadata/_edit_pinned_properties_ = [&"zombie_type"]
 
 [node name="BodyCorrect" parent="Body" index="0"]
@@ -1452,6 +1458,9 @@ centered = false
 libraries = {
 &"": SubResource("AnimationLibrary_bab66")
 }
+
+[node name="DetectComponent" parent="AttackComponent" index="0"]
+script = ExtResource("detect_snorkle")
 
 [node name="SwimBoxComponent" parent="." index="8"]
 script = ExtResource("39_ly73f")

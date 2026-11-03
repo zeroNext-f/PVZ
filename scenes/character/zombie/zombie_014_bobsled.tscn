@@ -9475,6 +9475,8 @@ height = 200.0
 [node name="Zombie014Bobsled" instance=ExtResource("1_lm26a")]
 script = ExtResource("2_2l04k")
 zombie_type = 14
+zombie_body_size = 2
+immune_to_abnormal_status = true
 
 [node name="Body2" type="Node2D" parent="." index="0"]
 unique_name_in_owner = true
@@ -9997,6 +9999,9 @@ script = ExtResource("24_lm26a")
 [node name="HpStageChangeComponent" parent="." index="7"]
 boundary_value_hp = Array[int]([200, 100, 0])
 body_change = Array[ExtResource("25_yqynq")]([SubResource("Resource_rehmt"), SubResource("Resource_0upo2"), SubResource("Resource_227y1")])
+
+[node name="HpComponent" parent="." index="8"]
+max_hp = 720
 
 [node name="CharredComponent" parent="." index="9"]
 script = ExtResource("30_mbxdl")

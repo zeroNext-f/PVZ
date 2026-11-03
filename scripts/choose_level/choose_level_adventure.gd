@@ -1,24 +1,30 @@
-## 冒险主页面保留原布局，白天与黑夜入口分别打开复用按钮的九关二级页。
+## 冒险主页面保留原布局，白天、黑夜和泳池入口分别打开复用按钮的九关二级页。
 extends ChooseLevel
 
 ## 原白天入口，沿用主页面编号。
 @onready var day_entry:ChooseLevelButton = $AllPage/GridContainer/ChooseLevelButton
 ## 原黑夜入口，保留原按钮而不直接进入全局黑夜配置。
 @onready var night_entry:ChooseLevelButton = $AllPage/GridContainer/ChooseLevelButton2
+## 原泳池入口，只打开二级页，不再直接进入整节点全局配置。
+@onready var pool_entry:ChooseLevelButton = $AllPage/GridContainer/ChooseLevelButton3
 ## 已有白天九关页面。
 @onready var day_sublevels:Control = $DaySublevels
 ## 黑夜九关页面，独立固定存档编号night_01至night_09。
 @onready var night_sublevels:Control = $NightSublevels
+## 泳池九关，固定编号pool_01至pool_09，与旧整节点及其他子关卡记录隔离。
+@onready var pool_sublevels:Control = $PoolSublevels
 ## 主页面共用标题。
 @onready var adventure_title:Label = $Label
 
-## 初始化两页固定编号、通关状态和顺序锁定，不参与原主页面自动编号。
+## 初始化三页固定编号、通关状态和顺序锁定，不参与原主页面自动编号。
 func _ready() -> void:
 	super()
 	day_sublevels.hide()
 	night_sublevels.hide()
+	pool_sublevels.hide()
 	_init_sublevels(day_sublevels)
 	_init_sublevels(night_sublevels)
+	_init_sublevels(pool_sublevels)
 
 ## [param page] 二级九宫格；第一关开放，后续要求此前全部关卡通关，调试全开沿用原配置。
 func _init_sublevels(page:Control) -> void:
@@ -42,6 +48,24 @@ func _init_sublevels(page:Control) -> void:
 ## [param choose_level_button] 主入口；[param curr_level_state_data] 原入口记录。
 ## 白天九关的通关键独立于旧白天入口，黑夜入口须同时兼容新白天完成记录。
 func update_lock_level(choose_level_button:ChooseLevelButton, curr_level_state_data:Dictionary):
+	if choose_level_button.name == "ChooseLevelButton3":
+		# 新黑夜末关和旧黑夜主入口均可解锁泳池；保留旧泳池已通关玩家的入口。
+		var night_final_state:Dictionary = Global.global_game_state.curr_all_level_state_data.get(str(game_mode) + "_0_night_09", {})
+		var old_night_state:Dictionary = Global.global_game_state.curr_all_level_state_data.get(str(game_mode) + "_0_0002", {})
+		var pool_final_state:Dictionary = Global.global_game_state.curr_all_level_state_data.get(str(game_mode) + "_0_pool_09", {})
+		if pool_final_state.get("IsSuccess", false):
+			choose_level_button.success.visible = true
+		if Global.config_service.open_all_level or curr_level_state_data.get("IsSuccess", false) \
+			or night_final_state.get("IsSuccess", false) or old_night_state.get("IsSuccess", false) \
+			or pool_final_state.get("IsSuccess", false):
+			return
+		choose_level_button.lock_choose_level_button()
+		return
+	if choose_level_button.name == "ChooseLevelButton4":
+		# 新泳池末关完成后也可进入原迷雾入口，不要求再次通关已被二级页替代的旧泳池。
+		var pool_final_state:Dictionary = Global.global_game_state.curr_all_level_state_data.get(str(game_mode) + "_0_pool_09", {})
+		if pool_final_state.get("IsSuccess", false):
+			return
 	if choose_level_button.name == "ChooseLevelButton2":
 		# 固定白天末关的存档键，避免主页面旧编号一直未通关导致黑夜入口永久锁住。
 		var day_final_key:String = str(game_mode) + "_0_day_09"
@@ -53,19 +77,25 @@ func update_lock_level(choose_level_button:ChooseLevelButton, curr_level_state_d
 		return
 	super(choose_level_button, curr_level_state_data)
 
-## [param choose_level_button] 白天/黑夜主按钮只打开对应二级页，其余按钮复用原战斗入口。
+## [param choose_level_button] 白天/黑夜/泳池主按钮只打开对应二级页，其余按钮复用原战斗入口。
 func _on_choose_level_button(choose_level_button:ChooseLevelButton):
-	if choose_level_button == day_entry or choose_level_button == night_entry:
+	if choose_level_button == day_entry or choose_level_button == night_entry or choose_level_button == pool_entry:
 		all_page.hide()
 		day_sublevels.visible = choose_level_button == day_entry
 		night_sublevels.visible = choose_level_button == night_entry
-		adventure_title.text = "白 天" if choose_level_button == day_entry else "黑 夜"
+		pool_sublevels.visible = choose_level_button == pool_entry
+		adventure_title.text = "白 天" if choose_level_button == day_entry else ("黑 夜" if choose_level_button == night_entry else "泳 池")
 		choose_level_button.texture_button.release_focus()
 		return
 	super(choose_level_button)
 
-## 黑夜二级页返回时先回冒险主页面；其他页面保持原主菜单返回行为。
+## 黑夜或泳池二级页返回时先回冒险主页面；其他页面保持原有返回行为。
 func back_start_menu():
+	if pool_sublevels.visible:
+		pool_sublevels.hide()
+		all_page.show()
+		adventure_title.text = "冒 险 模 式"
+		return
 	if night_sublevels.visible:
 		night_sublevels.hide()
 		all_page.show()
